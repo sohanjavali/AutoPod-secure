@@ -1,20 +1,36 @@
-import express from "express";
-import type { Request, Response, NextFunction } from "express";
-import { generatePodcastController, getPodcastController } from "../controllers/podcast.controller.js";
+import { Router } from "express";
+import {
+  generatePodcastController,
+  listPodcastsController,
+  getPodcastByIdController,
+  deletePodcastController,
+} from "../controllers/podcast.controller";
+
+const router = Router();
 
 /**
- * podcast.routes.ts
- * - POST /podcast/generate
- * - GET /podcast/:id
+ * POST /api/podcasts/generate
+ * Body: { topic: string, duration?: number, style?: string, tone?: string }
+ * Returns: full episode object (script, metadata, quiz, etc.)
  */
-const router = express.Router();
+router.post("/podcasts/generate", generatePodcastController);
 
-router.post("/generate", async (req: Request, res: Response, next: NextFunction) => {
-  return generatePodcastController(req, res, next);
-});
+/**
+ * GET /api/podcasts
+ * Returns: list of all generated episodes (in-memory for now)
+ */
+router.get("/podcasts", listPodcastsController);
 
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
-  return getPodcastController(req, res, next);
-});
+/**
+ * GET /api/podcasts/:id
+ * Returns: single episode by id
+ */
+router.get("/podcasts/:id", getPodcastByIdController);
+
+/**
+ * DELETE /api/podcasts/:id
+ * Deletes an episode
+ */
+router.delete("/podcasts/:id", deletePodcastController);
 
 export default router;
