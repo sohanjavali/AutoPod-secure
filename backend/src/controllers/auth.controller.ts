@@ -1,30 +1,25 @@
-import type { Request, Response, NextFunction } from "express";
-import type { Config } from "../config/env.js";
+// backend/src/controllers/auth.controller.ts
+import type { Request, Response } from "express";
+import { loginWithEmail } from "../services/auth.service";
+import logger from "../utils/logger";
 
-/**
- * auth.controller.ts
- * - Handles HTTP layer for auth-related endpoints.
- * - Delegates to auth.service for actual Supabase operations.
- */
+export function loginController(req: Request, res: Response) {
+  const { email } = req.body || {};
 
-/**
- * signupController
- * POST /auth/signup
- * - Expected to read { email, password } from req.body
- * - Validate input, call auth.service.createUser, and return created user (or errors)
- */
-export async function signupController(req: Request, res: Response, next: NextFunction): Promise<void> {
-  // TODO: validate request body and call service
-  throw new Error("signupController not implemented");
-}
+  if (!email || typeof email !== "string" || !email.trim()) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: "Field 'email' is required and must be a non-empty string",
+    });
+  }
 
-/**
- * loginController
- * POST /auth/login
- * - Expected to read { email, password } from req.body
- * - Exchange credentials for a session/token or delegate to Supabase client
- */
-export async function loginController(req: Request, res: Response, next: NextFunction): Promise<void> {
-  // TODO: validate request body and call service
-  throw new Error("loginController not implemented");
+  const { user, token } = loginWithEmail(email.trim());
+
+  logger.info(`[auth] login for ${email}`);
+
+  res.status(200).json({
+    success: true,
+    user,
+    token,
+  });
 }
