@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient as createSupabaseClient } from '@/utiils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, Play, Save, ArrowRight } from 'lucide-react';
@@ -62,11 +63,10 @@ interface GeneratedPodcast {
 }
 
 interface MainPromptAreaProps {
-  isLoggedIn: boolean;
-  onLoginSuccess: () => void;
+  onLoginSuccess?: () => void;
 }
 
-export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaProps) {
+export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('Conversational');
@@ -79,8 +79,18 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
   const selectedLanguageLabel =
     LANGUAGE_PRESETS.find((l) => l.code === language)?.label ?? 'English';
 
-  const handleGeneratePodcast = () => {
-    if (!isLoggedIn) {
+  const handleGeneratePodcast = async () => {
+    // Check supabase user server-side via client getUser (more secure than getSession for presence check)
+    const supabase = createSupabaseClient();
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (!user) {
+        setShowLoginModal(true);
+        return;
+      }
+    } catch (err) {
+      // if user check fails, show login modal
       setShowLoginModal(true);
       return;
     }
@@ -277,7 +287,7 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
       {showLoginModal && (
         <LoginModal
           onClose={() => setShowLoginModal(false)}
-          onLoginSuccess={onLoginSuccess}
+          onLoginSuccess={onLoginSuccess ?? (() => setShowLoginModal(false))}
         />
       )}
     </>

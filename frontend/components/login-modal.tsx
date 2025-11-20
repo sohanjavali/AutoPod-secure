@@ -29,15 +29,43 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
         if (error) throw error;
         // If signup returns a user, consider it successful (email confirm flows may still be required)
         if (data?.user) {
-          onLoginSuccess();
-          onClose();
+          // If a session is returned (rare with confirm flows), persist it server-side
+          if (data.session) {
+            await fetch('/api/auth/set-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+                expires_at: data.session.expires_at,
+              }),
+            })
+          }
+
+          onLoginSuccess()
+          onClose()
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (data?.session) {
-          onLoginSuccess();
-          onClose();
+          // Persist tokens to HttpOnly cookies so middleware can read them
+          try {
+            await fetch('/api/auth/set-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+                expires_at: data.session.expires_at,
+              }),
+            })
+          } catch (err) {
+            console.warn('Failed to persist session cookie', err)
+          }
+
+          onLoginSuccess()
+          onClose()
         }
       }
     } catch (err: any) {
@@ -55,7 +83,7 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
       const supabase = createSupabaseClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin + '/dashboard' },
+        options: { redirectTo: window.location.origin + '/auth/callback' },
       });
       if (error) throw error;
       // The call will redirect the browser to the provider; nothing further to do here.
