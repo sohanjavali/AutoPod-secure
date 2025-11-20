@@ -9,6 +9,52 @@ import { LoginModal } from '@/components/login-modal';
 
 const STYLE_PRESETS = ['Conversational', 'Educational', 'Entertaining', 'Professional'];
 
+/* Languages supported in the UI (default: English) */
+const LANGUAGE_PRESETS = [
+  { label: 'English', code: 'en' },
+  { label: 'French', code: 'fr' },
+  { label: 'German', code: 'de' },
+  { label: 'Spanish', code: 'es' },
+  { label: 'Portuguese', code: 'pt' },
+  { label: 'Chinese', code: 'zh' },
+  { label: 'Japanese', code: 'ja' },
+  { label: 'Hindi', code: 'hi' },
+  { label: 'Italian', code: 'it' },
+  { label: 'Korean', code: 'ko' },
+  { label: 'Dutch', code: 'nl' },
+  { label: 'Polish', code: 'pl' },
+  { label: 'Russian', code: 'ru' },
+  { label: 'Swedish', code: 'sv' },
+  { label: 'Turkish', code: 'tr' },
+  { label: 'Tagalog', code: 'tl' },
+  { label: 'Bulgarian', code: 'bg' },
+  { label: 'Romanian', code: 'ro' },
+  { label: 'Arabic', code: 'ar' },
+  { label: 'Czech', code: 'cs' },
+  { label: 'Greek', code: 'el' },
+  { label: 'Finnish', code: 'fi' },
+  { label: 'Croatian', code: 'hr' },
+  { label: 'Malay', code: 'ms' },
+  { label: 'Slovak', code: 'sk' },
+  { label: 'Danish', code: 'da' },
+  { label: 'Tamil', code: 'ta' },
+  { label: 'Ukrainian', code: 'uk' },
+  { label: 'Hungarian', code: 'hu' },
+  { label: 'Norwegian', code: 'no' },
+  { label: 'Vietnamese', code: 'vi' },
+  { label: 'Bengali', code: 'bn' },
+  { label: 'Thai', code: 'th' },
+  { label: 'Hebrew', code: 'he' },
+  { label: 'Georgian', code: 'ka' },
+  { label: 'Indonesian', code: 'id' },
+  { label: 'Telugu', code: 'te' },
+  { label: 'Gujarati', code: 'gu' },
+  { label: 'Kannada', code: 'kn' },
+  { label: 'Malayalam', code: 'ml' },
+  { label: 'Marathi', code: 'mr' },
+  { label: 'Punjabi', code: 'pa' },
+];
+
 interface GeneratedPodcast {
   id: string;
   title: string;
@@ -28,6 +74,10 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [language, setLanguage] = useState('en');
+
+  const selectedLanguageLabel =
+    LANGUAGE_PRESETS.find((l) => l.code === language)?.label ?? 'English';
 
   const handleGeneratePodcast = () => {
     if (!isLoggedIn) {
@@ -43,7 +93,7 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
       const mockPodcast: GeneratedPodcast = {
         id: `podcast-${Date.now()}`,
         title: `${prompt.split(' ').slice(0, 5).join(' ')}`,
-        description: `A ${length}-minute ${style.toLowerCase()} podcast episode discussing "${prompt}".`,
+        description: `A ${length}-minute ${style.toLowerCase()} podcast episode (in ${selectedLanguageLabel}) discussing "${prompt}".`,
       };
       setGeneratedPodcast(mockPodcast);
       setIsLoading(false);
@@ -109,6 +159,18 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
                     ))}
                   </select>
 
+                  {/* Language dropdown */}
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="hover-pop rounded-full border border-blue-200/50 bg-blue-50/60 px-4 py-2 text-sm font-medium text-foreground transition-all focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300/30 dark:bg-secondary dark:border-border"
+                  >
+                    {LANGUAGE_PRESETS.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.label} ({l.code})
+                      </option>
+                    ))}
+                  </select>
                   {/* Length buttons */}
                   <div className="flex gap-3">
                     {[15, 30].map((min) => (
@@ -117,7 +179,7 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
                         onClick={() => setLength(min)}
                         className={`hover-pop rounded-full px-6 py-2 font-medium text-sm transition-all ${
                           length === min
-                            ? 'bg-foreground text-white shadow-lg'
+                            ? 'bg-primary text-primary-foreground shadow-lg'
                             : 'border border-blue-200/50 bg-blue-50/60 text-foreground hover:bg-blue-100/60 dark:bg-secondary dark:border-border'
                         }`}
                       >
@@ -131,7 +193,7 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
                 <Button
                   onClick={handleGeneratePodcast}
                   disabled={!prompt.trim() || isLoading}
-                  className="hover-pop w-full gap-2 rounded-full bg-foreground px-7 py-2.5 text-sm font-medium text-white hover:bg-foreground/90 sm:w-auto disabled:opacity-50"
+                  className="hover-pop w-full gap-2 rounded-full bg-primary px-7 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:w-auto disabled:opacity-50"
                   size="lg"
                 >
                   {isLoading ? (
@@ -152,13 +214,6 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
         </div>
 
         <div>
-          {!generatedPodcast && !isLoading && (
-            <div className="rounded-3xl border-2 border-dashed border-border bg-white/40 p-16 text-center transition-all dark:bg-card/40">
-              <div className="mb-4 text-5xl">🎙️</div>
-              <p className="text-lg text-muted-foreground">Generate podcast will appear here</p>
-            </div>
-          )}
-
           {isLoading && (
             <div className="rounded-3xl border border-border bg-card p-16 text-center shadow-lg">
               <div className="mb-4 inline-block">
@@ -178,6 +233,7 @@ export function MainPromptArea({ isLoggedIn, onLoginSuccess }: MainPromptAreaPro
               <div className="mb-6 flex flex-wrap gap-2">
                 <Badge className="rounded-full bg-blue-100 text-foreground dark:bg-secondary">{length}m</Badge>
                 <Badge className="rounded-full bg-blue-100 text-foreground dark:bg-secondary">{style}</Badge>
+                <Badge className="rounded-full bg-blue-100 text-foreground dark:bg-secondary">{selectedLanguageLabel}</Badge>
               </div>
 
               <div className="flex flex-col gap-3">
