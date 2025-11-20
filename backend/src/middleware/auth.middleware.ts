@@ -1,12 +1,17 @@
-import type { Request, Response, NextFunction } from "express";
+// backend/src/middleware/auth.middleware.ts
+import type { NextFunction, Response } from "express";
+import { AuthedRequest } from "../utils/types";
+import { getUserFromToken } from "../services/auth.service";
 
-/**
- * auth.middleware.ts
- * - Middleware that validates JWT/session for protected routes
- * - In this project, Supabase-authenticated sessions or custom JWTs can be supported.
- */
-
-export async function jwtAuthMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
-  // TODO: verify Authorization header / cookie, validate token, attach user to req
-  throw new Error("jwtAuthMiddleware not implemented");
+export function authMiddleware(
+  req: AuthedRequest,
+  _res: Response,
+  next: NextFunction
+) {
+  const authHeader = req.headers.authorization;
+  const user = getUserFromToken(authHeader);
+  if (user) {
+    req.user = user;
+  }
+  next();
 }
