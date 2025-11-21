@@ -114,7 +114,7 @@ export function Header({ isLoggedIn, onLogout, darkMode, onDarkModeToggle }: Hea
           {resolvedLoggedIn && (
             <>
               <Button variant="ghost" asChild className="hover-pop gap-2">
-                <Link href="/dashboard">
+                <Link href="/library">
                   <Library className="h-4 w-4" />
                   <span className="hidden sm:inline">Library</span>
                 </Link>

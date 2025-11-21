@@ -42,7 +42,7 @@ export default function AuthCallbackPage() {
       }
 
       // Redirect to dashboard after cookies set
-      router.replace('/dashboard')
+      router.replace('/library')
     }
 
     finishAuth()

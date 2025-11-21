@@ -5,8 +5,8 @@ import { createMiddlewareSupabaseClient } from '@/utiils/supabase/middleware'
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Protect /dashboard and its subpaths
-  if (pathname.startsWith('/dashboard')) {
+  // Protect /library and its subpaths
+  if (pathname.startsWith('/library')) {
     const supabase = createMiddlewareSupabaseClient(req)
 
     try {
@@ -27,5 +27,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/library/:path*'],
 }

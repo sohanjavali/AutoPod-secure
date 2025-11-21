@@ -101,7 +101,7 @@ export default function EpisodePage() {
         <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
           {/* Back Link */}
           <Button variant="ghost" asChild className="mb-6 gap-2">
-            <Link href="/dashboard">
+            <Link href="/library">
               <ChevronLeft className="h-4 w-4" />
               Back to My Podcasts
             </Link>

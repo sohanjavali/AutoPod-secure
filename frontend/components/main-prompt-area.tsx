@@ -107,7 +107,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
 
   const handleSaveToLibrary = () => {
     if (generatedPodcast) {
-      router.push(`/dashboard`);
+      router.push(`/library`);
     }
   };
 
