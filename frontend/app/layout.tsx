@@ -9,7 +9,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: 'AutoPod - AI Podcast Generator',
   description: 'Create AI-generated podcasts instantly with customizable style and length',
-  generator: 'v0.app',
   icons: {
     icon: [
       {

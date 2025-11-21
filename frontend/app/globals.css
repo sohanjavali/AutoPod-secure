@@ -139,3 +139,65 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+/* Subtle moving blobs used for background flair (works in light and dark) */
+@keyframes blob-move {
+  0% { transform: translate3d(0,0,0) scale(1); }
+  25% { transform: translate3d(30px,-20px,0) scale(1.05); }
+  50% { transform: translate3d(-20px,20px,0) scale(0.95); }
+  75% { transform: translate3d(10px,30px,0) scale(1.02); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+.animate-blob {
+  /* slightly faster so motion is more noticeable */
+  animation: blob-move 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.blob-blur {
+  /* less extreme blur so blobs are more visible on light backgrounds */
+  filter: blur(24px);
+  -webkit-filter: blur(24px);
+}
+
+/* Blend mode helpers to make blobs read well in both themes */
+.blob-blend {
+  mix-blend-mode: multiply;
+}
+.dark .blob-blend {
+  mix-blend-mode: screen;
+}
+
+/* Stronger SVG-based animated layer for high-visibility background motion */
+@keyframes svg-translate-1 {
+  0% { transform: translate3d(-10%, -5%, 0) scale(1); }
+  50% { transform: translate3d(8%, 6%, 0) scale(1.08); }
+  100% { transform: translate3d(-10%, -5%, 0) scale(1); }
+}
+
+@keyframes svg-translate-2 {
+  0% { transform: translate3d(5%, 10%, 0) scale(1); }
+  50% { transform: translate3d(-12%, -8%, 0) scale(1.12); }
+  100% { transform: translate3d(5%, 10%, 0) scale(1); }
+}
+
+@keyframes svg-translate-3 {
+  0% { transform: translate3d(0%, -12%, 0) scale(1); }
+  50% { transform: translate3d(10%, 12%, 0) scale(1.06); }
+  100% { transform: translate3d(0%, -12%, 0) scale(1); }
+}
+
+.svg-anim {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+  filter: blur(18px);
+}
+.dark .svg-anim {
+  mix-blend-mode: screen;
+  opacity: 0.28;
+}
+.svg-anim .move-1 { animation: svg-translate-1 14s ease-in-out infinite; transform-origin: center; }
+.svg-anim .move-2 { animation: svg-translate-2 16s ease-in-out infinite; transform-origin: center; }
+.svg-anim .move-3 { animation: svg-translate-3 18s ease-in-out infinite; transform-origin: center; }
+
+/* Audio bars removed */
