@@ -1,27 +1,30 @@
-/**
- * env.ts
- * Centralized environment configuration loader.
- *
- * This file will eventually read process.env and export a typed `Config` object
- * containing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CARTESIA_API_KEY, LLM keys, etc.
- *
- * For the scaffold we only expose the function signature and comments.
- */
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export interface Config {
-  SUPABASE_URL?: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
   CARTESIA_API_KEY?: string;
-  LLM_API_KEY?: string;
+  CLAUDE_API_KEY?: string;
   PORT?: number;
 }
 
-/**
- * loadConfig
- * - Should synchronously read and validate environment variables from process.env
- * - Should throw or return a result that indicates missing required variables
- */
 export function loadConfig(): Config {
-  // TODO: implement reading and validation
-  throw new Error("loadConfig not implemented");
+  const env = process.env;
+
+  // Add missing required env vars to the list
+  const missing: string[] = [];
+  if (!env.CARTESIA_API_KEY) missing.push('CARTESIA_API_KEY');
+  if (!env.CLAUDE_API_KEY) missing.push('CLAUDE_API_KEY');
+  if (!env.PORT) missing.push('PORT');
+
+  if (missing.length > 0) throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+
+  const result: Partial<Config> = {};
+
+  // At this point the required env vars exist (non-empty string)
+  if (env.CARTESIA_API_KEY) result.CARTESIA_API_KEY = env.CARTESIA_API_KEY;
+  if (env.CLAUDE_API_KEY) result.CLAUDE_API_KEY = env.CLAUDE_API_KEY;
+  if (env.PORT) result.PORT = Number(env.PORT);
+
+  return result as Config;
 }

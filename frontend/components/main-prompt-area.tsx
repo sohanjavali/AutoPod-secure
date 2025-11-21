@@ -70,7 +70,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('Conversational');
-  const [length, setLength] = useState(15);
+  const [duration, setDuration] = useState(15);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -94,6 +94,19 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
 
     if (!prompt.trim()) return;
 
+    const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/generate-podcast`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: prompt.trim(),
+        style,
+        duration,
+        language,
+      }),
+    });
+
     setIsLoading(true);
   };
 
@@ -106,7 +119,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
             Generate podcasts <br /> in seconds
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            Describe what you want, choose your style and length, and let AI do the rest.
+            Describe what you want, choose your style and duration, and let AI do the rest.
           </p>
         </div>
 
@@ -155,9 +168,9 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
                     {[15, 30].map((min) => (
                       <button
                         key={min}
-                        onClick={() => setLength(min)}
+                        onClick={() => setDuration(min)}
                         className={`hover-pop rounded-full px-6 py-2 font-medium text-sm transition-all ${
-                          length === min
+                          duration === min
                             ? 'bg-primary text-primary-foreground shadow-lg'
                             : 'border border-blue-200/50 bg-blue-50/60 text-foreground hover:bg-blue-100/60 dark:bg-secondary dark:border-border'
                         }`}
