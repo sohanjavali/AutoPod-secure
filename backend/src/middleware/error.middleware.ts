@@ -1,16 +1,14 @@
-import type { Request, Response, NextFunction } from "express";
+// backend/src/middleware/error.middleware.ts
+import type { NextFunction, Request, Response } from "express";
+import logger from "../utils/logger";
 
-/**
- * error.middleware.ts
- * - Centralized error handling middleware
- * - Should format errors (consistent JSON shape), handle known error types, and hide internals
- */
-
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
-  // TODO: implement structured error handling and logging
-  // For the scaffold, just return a 500 with a generic message
-  console.error(err);
-  res.status(500).json({ error: "internal_server_error" });
+export function errorMiddleware(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) {
+  logger.error("[ERROR MIDDLEWARE]", err);
+  const message = err instanceof Error ? err.message : "Unknown error";
+  res.status(500).json({ error: "Internal Server Error", message });
 }
-
-export default errorHandler;

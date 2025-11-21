@@ -1,12 +1,9 @@
-import express from "express";
-import type { Request, Response } from "express";
-import { healthController } from "../controllers/health.controller.js";
+import { Router } from "express";
+import { getHealth } from "../controllers/health.controller";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/", (req: Request, res: Response) => {
-  // Simple health check response delegated to controller
-  return healthController(req, res);
-});
+// GET /api/health
+router.get("/", getHealth);
 
 export default router;

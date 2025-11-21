@@ -1,37 +1,43 @@
+// backend/src/index.ts
+// Main server entrypoint for AutoPod
+
 import express from "express";
-import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 
-import authRoutes from "./routes/auth.routes.js";
-import podcastRoutes from "./routes/podcast.routes.js";
-import healthRoutes from "./routes/health.routes.js";
-import errorHandler from "./middleware/error.middleware.js";
+import { env } from "./config/env";
+import logger from "./utils/logger";
 
-dotenv.config();
+import healthRoutes from "./routes/health.routes";
+import authRoutes from "./routes/auth.routes";
+import podcastRoutes from "./routes/podcast.routes";
+
+import { authMiddleware } from "./middleware/auth.middleware";
+import { errorMiddleware } from "./middleware/error.middleware";
 
 const app = express();
 
+// ---------- Global middleware ----------
 app.use(cors());
 app.use(express.json());
 
-// Health check
-app.get("/", (_req: Request, res: Response) => {
-	res.json({ status: "ok", timestamp: Date.now() });
+// Simple request logger (optional but useful)
+app.use((req, _res, next) => {
+  logger.info(`${req.method} ${req.path}`);
+  next();
 });
 
-// Routes
-app.use("/auth", authRoutes);
-app.use("/podcast", podcastRoutes);
-app.use("/health", healthRoutes);
+// If you want auth on all routes, uncomment this:
+// app.use(authMiddleware);
 
-// Error handler (should be last)
-app.use(errorHandler);
+// ---------- Routes ----------
+app.use("/api/health", healthRoutes);   // GET /api/health
+app.use("/api/auth", authRoutes);       // POST /api/auth/login
+app.use("/api", podcastRoutes);         // /api/podcasts/* routes
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
-app.listen(PORT, () => {
-	// eslint-disable-next-line no-console
-	console.log(`Backend server listening on http://localhost:${PORT}`);
+// ---------- Error handling ----------
+app.use(errorMiddleware);
+
+// ---------- Start server ----------
+app.listen(env.port, () => {
+  logger.info(`🚀 AutoPod backend running on http://localhost:${env.port}`);
 });
-
-export default app;
