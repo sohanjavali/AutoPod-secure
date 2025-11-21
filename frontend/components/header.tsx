@@ -11,55 +11,50 @@ import { useTheme } from 'next-themes';
 interface HeaderProps {
   isLoggedIn?: boolean;
   onLogout?: () => void;
-  // legacy: keep optional external control, but prefer next-themes
-  darkMode?: boolean;
-  onDarkModeToggle?: () => void;
+  // legacy darkMode and onDarkModeToggle removed
 }
 
-export function Header({ isLoggedIn, onLogout, darkMode, onDarkModeToggle }: HeaderProps) {
+export function Header({ isLoggedIn, onLogout }: HeaderProps) {
   const [localLoggedIn, setLocalLoggedIn] = useState<boolean | null>(null);
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
+
+  // Track client mount to avoid rendering theme-dependent UI during SS (prevent hydration mismatches)
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
 
   useEffect(() => {
     // If parent didn't supply isLoggedIn, detect via Supabase in the browser
     if (typeof isLoggedIn === 'undefined') {
       const supabase = createSupabaseClient();
 
-      let mounted = true;
-
       (async () => {
         try {
           const { data } = await supabase.auth.getUser();
-          if (!mounted) return;
           setLocalLoggedIn(!!data?.user);
         } catch (err) {
-          if (!mounted) return;
           setLocalLoggedIn(false);
         }
       })();
 
       const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-        if (mounted) setLocalLoggedIn(!!session);
+        setLocalLoggedIn(!!session);
       });
 
       return () => {
-        mounted = false;
         sub?.subscription.unsubscribe();
       };
     }
   }, [isLoggedIn]);
 
-  // Resolve whether dark is active. If parent explicitly passes darkMode, prefer it (legacy).
+  // Resolve whether dark is active from next-themes
   const resolvedDark = (() => {
-    if (typeof darkMode === 'boolean') return darkMode;
     if (!theme) return false;
     if (theme === 'system') return systemTheme === 'dark';
     return theme === 'dark';
   })();
 
   const handleToggle = () => {
-    if (typeof onDarkModeToggle === 'function') return onDarkModeToggle();
     // toggle via next-themes
     try {
       // if theme is explicit 'dark' switch to light; otherwise set dark
@@ -105,10 +100,16 @@ export function Header({ isLoggedIn, onLogout, darkMode, onDarkModeToggle }: Hea
             className="hover-pop p-2"
             size="sm"
           >
-            {resolvedDark ? (
-              <Sun className="h-4 w-4 text-foreground" />
+            {isMounted ? (
+              resolvedDark ? (
+                <Sun className="h-4 w-4 text-foreground" />
+              ) : (
+                <Moon className="h-4 w-4 text-foreground" />
+              )
             ) : (
-              <Moon className="h-4 w-4 text-foreground" />
+              // Render a stable placeholder during SSR / first paint so server
+              // and client markup match and avoid hydration mismatches.
+              <span className="inline-block h-4 w-4" aria-hidden />
             )}
           </Button>
           {resolvedLoggedIn && (
