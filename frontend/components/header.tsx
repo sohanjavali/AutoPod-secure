@@ -12,7 +12,6 @@ import { useTheme } from 'next-themes';
 interface HeaderProps {
   isLoggedIn?: boolean;
   onLogout?: () => void;
-  // legacy darkMode and onDarkModeToggle removed
 }
 
 export function Header({ isLoggedIn, onLogout }: HeaderProps) {
@@ -21,7 +20,7 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
 
-  // Track client mount to avoid rendering theme-dependent UI during SS (prevent hydration mismatches)
+  // Track client mount to avoid rendering theme-dependent UI during SSR (prevent hydration mismatches)
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
 
@@ -141,9 +140,7 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
                     setShowLoginModal(false);
                     try {
                       router.refresh();
-                    } catch (e) {
-                      // noop if refresh not available
-                    }
+                    } catch (e) {}
                   }}
                 />
               )}

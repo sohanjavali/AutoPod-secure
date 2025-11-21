@@ -10,7 +10,7 @@ import { LoginModal } from '@/components/login-modal';
 
 const STYLE_PRESETS = ['Conversational', 'Educational', 'Entertaining', 'Professional'];
 
-/* Languages supported in the UI (default: English) */
+// Languages supported in the UI (default: English)
 const LANGUAGE_PRESETS = [
   { label: 'English', code: 'en' },
   { label: 'French', code: 'fr' },
@@ -76,9 +76,11 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [language, setLanguage] = useState('en');
 
+  // Get label for selected language code
   const selectedLanguageLabel =
     LANGUAGE_PRESETS.find((l) => l.code === language)?.label ?? 'English';
 
+  // Handle on click for the generate button
   const handleGeneratePodcast = async () => {
     const supabase = createSupabaseClient();
     
@@ -93,16 +95,6 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
     if (!prompt.trim()) return;
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const mockPodcast: GeneratedPodcast = {
-        id: `podcast-${Date.now()}`,
-        title: `${prompt.split(' ').slice(0, 5).join(' ')}`,
-        description: `A ${length}-minute ${style.toLowerCase()} podcast episode (in ${selectedLanguageLabel}) discussing "${prompt}".`,
-      };
-      setGeneratedPodcast(mockPodcast);
-      setIsLoading(false);
-    }, 1500);
   };
 
   return (

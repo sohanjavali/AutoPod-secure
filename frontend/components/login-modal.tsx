@@ -51,7 +51,7 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
         return;
       }
 
-      // If a session is returned (some flows may return it), persist it server-side and treat as logged in
+      // If a session is returned, persist it server-side and treat as logged in
       if (data?.session) {
         sessionCreated = true;
         await fetch('/api/auth/set-session', {
@@ -88,7 +88,7 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
       }
     }
 
-    // If a session was created (sign in or sign-up that returned a session), treat as login success
+    // If a session was created, treat as login success
     if (sessionCreated) {
       onLoginSuccess();
       onClose();
