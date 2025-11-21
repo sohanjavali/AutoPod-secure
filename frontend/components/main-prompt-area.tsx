@@ -94,6 +94,8 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
 
     if (!prompt.trim()) return;
 
+    setIsLoading(true);
+
     const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/generate-podcast`, {
       method: 'POST',
       headers: {
@@ -106,8 +108,6 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
         language,
       }),
     });
-
-    setIsLoading(true);
   };
 
   return (
