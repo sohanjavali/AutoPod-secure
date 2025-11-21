@@ -120,7 +120,7 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
                 className="hover-pop flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">Log Out</span>
               </Button>
             </>
           ) : (
