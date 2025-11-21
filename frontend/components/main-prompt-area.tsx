@@ -80,17 +80,12 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
     LANGUAGE_PRESETS.find((l) => l.code === language)?.label ?? 'English';
 
   const handleGeneratePodcast = async () => {
-    // Check supabase user server-side via client getUser (more secure than getSession for presence check)
     const supabase = createSupabaseClient();
-    try {
-      const { data } = await supabase.auth.getUser();
-      const user = data?.user;
-      if (!user) {
-        setShowLoginModal(true);
-        return;
-      }
-    } catch (err) {
-      // if user check fails, show login modal
+    
+    const { data, error } = await supabase.auth.getUser();
+    const user = data?.user;
+
+    if (!user || error) {
       setShowLoginModal(true);
       return;
     }
