@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { LogOut, Library, Moon, Sun } from 'lucide-react';
+import { LogOut, LogIn, Library, Moon, Sun } from 'lucide-react';
+import { LoginModal } from '@/components/login-modal';
 import { createClient as createSupabaseClient } from '@/utiils/supabase/client';
 import { useTheme } from 'next-themes';
 
@@ -15,6 +16,7 @@ interface HeaderProps {
 }
 
 export function Header({ isLoggedIn, onLogout }: HeaderProps) {
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [localLoggedIn, setLocalLoggedIn] = useState<boolean | null>(null);
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
@@ -55,16 +57,11 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
   })();
 
   const handleToggle = () => {
-    // toggle via next-themes
-    try {
-      // if theme is explicit 'dark' switch to light; otherwise set dark
-      if (theme === 'dark' || (theme === 'system' && systemTheme === 'dark')) {
-        setTheme('light');
-      } else {
-        setTheme('dark');
-      }
-    } catch (err) {
-      // ignore
+    // if theme is explicit 'dark' switch to light; otherwise set dark
+    if (theme === 'dark' || (theme === 'system' && systemTheme === 'dark')) {
+      setTheme('light');
+    } else {
+      setTheme('dark');
     }
   };
 
@@ -73,14 +70,12 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
   const handleLogout = async () => {
     if (onLogout) return onLogout();
 
-    try {
-      const supabase = createSupabaseClient();
-      await supabase.auth.signOut();
-      // clear server cookies
-      await fetch('/api/auth/clear-session', { method: 'POST' });
-    } catch (err) {
-      console.warn('Logout failed', err);
-    }
+    const supabase = createSupabaseClient();
+    await supabase.auth.signOut();
+
+    // clear server cookies
+    await fetch('/api/auth/clear-session', { method: 'POST' });
+
     router.replace('/');
   };
 
@@ -107,12 +102,11 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
                 <Moon className="h-4 w-4 text-foreground" />
               )
             ) : (
-              // Render a stable placeholder during SSR / first paint so server
-              // and client markup match and avoid hydration mismatches.
+              // Render a stable placeholder during SSR
               <span className="inline-block h-4 w-4" aria-hidden />
             )}
           </Button>
-          {resolvedLoggedIn && (
+          {resolvedLoggedIn ? (
             <>
               <Button variant="ghost" asChild className="hover-pop gap-2">
                 <Link href="/library">
@@ -128,6 +122,31 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowLoginModal(true)}
+                className="hover-pop flex items-center gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign In</span>
+              </Button>
+              {showLoginModal && (
+                <LoginModal
+                  onClose={() => setShowLoginModal(false)}
+                  onLoginSuccess={() => {
+                    setLocalLoggedIn(true);
+                    setShowLoginModal(false);
+                    try {
+                      router.refresh();
+                    } catch (e) {
+                      // noop if refresh not available
+                    }
+                  }}
+                />
+              )}
             </>
           )}
         </nav>

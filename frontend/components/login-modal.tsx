@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { X, Mail, Lock } from 'lucide-react';
 import { createClient as createSupabaseClient } from '@/utiils/supabase/client';
@@ -11,6 +12,8 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -18,84 +21,90 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Handle form submission for sign-in or sign-up (using email/password)
   const handleSubmit = async () => {
-    setErrorMessage(null);
     if (!email || !password) return;
+
+    setErrorMessage(null);
     setIsLoading(true);
+
     const supabase = createSupabaseClient();
-    try {
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        // If signup returns a user, consider it successful (email confirm flows may still be required)
-        if (data?.user) {
-          // If a session is returned (rare with confirm flows), persist it server-side
-          if (data.session) {
-            await fetch('/api/auth/set-session', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                access_token: data.session.access_token,
-                refresh_token: data.session.refresh_token,
-                expires_at: data.session.expires_at,
-              }),
-            })
-          }
 
-          onLoginSuccess()
-          onClose()
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        if (data?.session) {
-          // Persist tokens to HttpOnly cookies so middleware can read them
-          try {
-            await fetch('/api/auth/set-session', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                access_token: data.session.access_token,
-                refresh_token: data.session.refresh_token,
-                expires_at: data.session.expires_at,
-              }),
-            })
-          } catch (err) {
-            console.warn('Failed to persist session cookie', err)
-          }
+    // Sepearate sign-in and sign-up flows
+    if (isSignUp) {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      
+      if (error) {
+        console.log('Signup error:', error);
+        setErrorMessage(error.message ?? 'Authentication failed');
+        setIsLoading(false);
+        return;
+      }
 
-          onLoginSuccess()
-          onClose()
+      // If signup returns a user, consider it successful (email confirm flows may still be required)
+      if (data?.user) {
+        // If a session is returned (rare with confirm flows), persist it server-side
+        if (data.session) {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+              expires_at: data.session.expires_at,
+            }),
+          })
         }
       }
-    } catch (err: any) {
-      console.error('Auth error', err);
-      setErrorMessage(err.message ?? 'Authentication failed');
-    } finally {
-      setIsLoading(false);
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        setErrorMessage(error.message ?? 'Authentication failed');
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.session) {
+        // Persist tokens to HttpOnly cookies so middleware can read them
+        await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_at: data.session.expires_at,
+          }),
+        })
+      }
     }
+
+    onLoginSuccess()
+    onClose()
+    setIsLoading(false);
   };
 
+  // Handle Google OAuth sign-in
   const handleGoogleSignIn = async () => {
     setErrorMessage(null);
     setIsLoading(true);
-    try {
-      const supabase = createSupabaseClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin + '/auth/callback' },
-      });
-      if (error) throw error;
-      // The call will redirect the browser to the provider; nothing further to do here.
-    } catch (err: any) {
-      console.error('Google sign-in error', err);
-      setErrorMessage(err.message ?? 'Google sign-in failed');
+
+    const supabase = createSupabaseClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/auth/callback' },
+    });
+      
+    if (error) {
+      setErrorMessage(error.message ?? 'Google sign-in failed');
       setIsLoading(false);
-    }
+    };
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 p-4">
       <div className="relative w-full max-w-md animate-in fade-in scale-in rounded-3xl bg-white dark:bg-card p-8 shadow-2xl">
         {/* Close button */}
         <button
@@ -194,5 +203,6 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
         </p>
       </div>
     </div>
+  , document.body
   );
 }

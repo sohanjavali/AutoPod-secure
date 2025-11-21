@@ -105,24 +105,6 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
     }, 1500);
   };
 
-  const handleSaveToLibrary = () => {
-    if (generatedPodcast) {
-      router.push(`/library`);
-    }
-  };
-
-  const handlePlayPreview = () => {
-    if (generatedPodcast) {
-      router.push(`/episode/${generatedPodcast.id}`);
-    }
-  };
-
-  const handleGoToEpisode = () => {
-    if (generatedPodcast) {
-      router.push(`/episode/${generatedPodcast.id}`);
-    }
-  };
-
   return (
     <>
       <div className="w-full">
@@ -132,7 +114,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
             Generate podcasts <br /> in seconds
           </h1>
           <p className="mt-6 text-lg text-muted-foreground">
-            Describe what you want, choose your style and length, and let AI create it.
+            Describe what you want, choose your style and length, and let AI do the rest.
           </p>
         </div>
 
@@ -216,65 +198,6 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
               </div>
             </div>
           </div>
-        </div>
-
-        <div>
-          {isLoading && (
-            <div className="rounded-3xl border border-border bg-card p-16 text-center shadow-lg">
-              <div className="mb-4 inline-block">
-                <Loader2 className="h-8 w-8 animate-spin text-foreground" />
-              </div>
-              <p className="text-muted-foreground">Creating your podcast...</p>
-            </div>
-          )}
-
-          {generatedPodcast && !isLoading && (
-            <div className="rounded-3xl border border-border bg-white dark:bg-card shadow-xl p-8 animate-in fade-in">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-foreground">{generatedPodcast.title}</h3>
-                <p className="mt-3 text-sm text-muted-foreground">{generatedPodcast.description}</p>
-              </div>
-
-              <div className="mb-6 flex flex-wrap gap-2">
-                <Badge className="rounded-full bg-blue-100 text-foreground dark:bg-secondary">{length}m</Badge>
-                <Badge className="rounded-full bg-blue-100 text-foreground dark:bg-secondary">{style}</Badge>
-                <Badge className="rounded-full bg-blue-100 text-foreground dark:bg-secondary">{selectedLanguageLabel}</Badge>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={handlePlayPreview}
-                  className="hover-pop gap-2 rounded-full bg-foreground text-white py-2 text-sm"
-                >
-                  <Play className="h-4 w-4" />
-                  Play Preview
-                </Button>
-                <Button
-                  onClick={handleSaveToLibrary}
-                  variant="outline"
-                  className="hover-pop gap-2 rounded-full border-border py-2 text-sm"
-                >
-                  <Save className="h-4 w-4" />
-                  Save to Library
-                </Button>
-                <Button
-                  onClick={handleGoToEpisode}
-                  variant="outline"
-                  className="hover-pop gap-2 rounded-full border-border py-2 text-sm"
-                >
-                  Go to Episode
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={() => setGeneratedPodcast(null)}
-                  variant="ghost"
-                  className="hover-pop rounded-full text-xs py-2"
-                >
-                  Create Another
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
