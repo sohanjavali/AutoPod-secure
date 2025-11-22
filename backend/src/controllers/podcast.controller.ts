@@ -36,9 +36,23 @@ export async function generatePodcastController(
   res: Response
 ): Promise<void> {
   const podcastConfig = req.body as PodcastConfig;
-  const research: ResearchResult = await researchPrompt(podcastConfig);
 
+  const research: ResearchResult = await researchPrompt(podcastConfig);
   console.log(research);
+
+  const script: ScriptResult = await generateScript(
+    podcastConfig,
+    JSON.stringify(research)
+  );
+  console.log(script);
+
+  res.status(200).json({
+    success: true,
+    research,
+    script,
+  });
+}
+  
   // try {
   //   const {
   //     topic,
