@@ -23,7 +23,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('Conversational');
-  const [duration, setDuration] = useState(3);
+  const [duration, setDuration] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -129,7 +129,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
 
                   {/* Length buttons */}
                   <div className="flex gap-3">
-                    {[3, 6].map((min) => (
+                    {[5, 10].map((min) => (
                       <button
                         key={min}
                         onClick={() => setDuration(min)}

@@ -12,9 +12,9 @@ export const cartesiaClient =
   (global.__cartesia_client__ = new CartesiaClient({ apiKey: env.CARTESIA_API_KEY }));
 
 export const voices: Voices = {
-  "Tessa": {
-    persona: "Kind Companion",
-    id: "6ccbfb76-1fc6-48f7-b71d-91ac6298247b"
+  "Maya": {
+    persona: "Easygoing Ally",
+    id: "cbaf8084-f009-4838-a096-07ee2e6612b1"
   },
   "Kiefer":{
     persona: "Assured Tone",

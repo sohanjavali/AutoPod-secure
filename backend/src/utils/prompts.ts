@@ -97,8 +97,8 @@ export const buildScriptPrompt = (
   researchNotes: string,
   voices: Voices
 ): string => {
-  const targetWords = podcastConfig.duration === 3 ? 500 : 1000;
-  const minLines = podcastConfig.duration === 3 ? 35 : 70;
+  const targetWords = podcastConfig.duration === 5 ? 500 : 1000;
+  const minLines = podcastConfig.duration === 5 ? 35 : 70;
   const minWords = Math.round(targetWords * 0.9);
   const maxWords = Math.round(targetWords * 1.1);
 
@@ -127,7 +127,7 @@ export const buildScriptPrompt = (
     ### SPEAKERS (RANDOM NAMES)
     ========================
     Choose EXACTLY three unique people as hosts/speakers for the podcast from the following list:
-    ['Tessa', 'Kiefer', 'Brandon', 'Joanie', 'Judith', 'Tanner']
+    ['Maya', 'Kiefer', 'Brandon', 'Joanie', 'Judith', 'Tanner']
 
     These names must appear in:
     1) EVERY "speaker" in "script"
