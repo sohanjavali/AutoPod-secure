@@ -12,3 +12,10 @@ export interface UserPayload {
   id: string;
   email: string;
 }
+
+export interface GeneratePodcastRequest {
+  prompt: string;
+  style: string; 
+  duration: number;  
+  language: string;
+}

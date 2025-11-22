@@ -75,6 +75,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [language, setLanguage] = useState('en');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Get label for selected language code
   const selectedLanguageLabel =
@@ -96,18 +97,37 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
 
     setIsLoading(true);
 
-    const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/generate-podcast`, {
+    // First, validate the prompt (see if it's safe and feasible)
+    const validation = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/validate-prompt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: prompt.trim() }),
+    }).then(res => res.json());
+
+    // If validation explicitly fails, show the reason to the user and stop
+    if (!validation?.data?.isValid) {
+      setValidationError(validation.data.reason ?? 'Cannot generate podcast for the given prompt.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Now, proceed to generate the podcast
+    const generation = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/generate-podcast`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        prompt: prompt.trim(),
+        prompt: validation.data.sanitizedTopic.trim(),
         style,
         duration,
         language,
       }),
-    });
+    })
+
+    setIsLoading(false);
   };
 
   return (
@@ -129,11 +149,20 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
               {/* Input field */}
               <textarea
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={(e) => {
+                  setPrompt(e.target.value);
+                  // Clear previous validation error when the user edits the prompt
+                  setValidationError(null);
+                }}
                 placeholder="What do you want your podcast to be about?"
                 rows={3}
+                readOnly={isLoading}
                 className="w-full resize-none rounded-3xl border-0 bg-blue-50/60 px-6 py-4 text-sm font-medium text-foreground placeholder:text-muted-foreground transition-all focus:outline-none focus:ring-2 focus:ring-blue-300/40 dark:bg-secondary dark:text-foreground"
               />
+
+              {validationError && (
+                <p className="mt-2 text-sm text-red-600">{validationError}</p>
+              )}
 
               {/* Controls row */}
               <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">

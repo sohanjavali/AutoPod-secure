@@ -1,5 +1,7 @@
 // backend/src/controllers/podcast.controller.ts
 import type { Request, Response, NextFunction } from "express";
+import type { GeneratePodcastRequest } from "../utils/types.ts";
+import { validatePrompt, type ValidateResult } from "../services/validate.service.ts";
 // import { generateScript } from "../services/script.service.js";
 // import { getResearchNotes } from "../services/research.service";
 // import { synthesizeAudio } from "../services/tts.service";
@@ -11,16 +13,23 @@ import type { Request, Response, NextFunction } from "express";
 // } from "../services/db.service";
 // import type { PodcastEpisode } from "../utils/types";
 
-interface GeneratePodcastRequest {
-  prompt: string;
-  style: string; 
-  duration: number;  
-  language: string;
+
+// POST /api/validate-prompt
+export async function validatePromptController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const { prompt } = req.body as { prompt: string };
+  const validated: ValidateResult = await validatePrompt(prompt);
+  
+  res.status(200).json({
+    success: true,
+    data: validated,
+  });
 }
 
-/**
- * POST /api/podcasts/generate
- */
+// POST /api/generate-podcast
 export async function generatePodcastController(
   req: Request,
   res: Response

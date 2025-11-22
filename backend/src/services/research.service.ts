@@ -4,12 +4,12 @@
  * - Exports a function that accepts a prompt and returns structured research notes
  */
 
+import type { GeneratePodcastRequest } from "../utils/types.ts";
+import Anthropic from "@anthropic-ai/sdk";
+
 export interface ResearchResult {
   summary: string;
   sources?: string[];
 }
 
-export async function researchPrompt(prompt: string): Promise<ResearchResult> {
-  // TODO: call Claude (or other research APIs) to gather background/context for the prompt
-  throw new Error("researchPrompt not implemented");
-}
+export async function researchPrompt(promptContext: GeneratePodcastRequest): Promise<ResearchResult> {}
