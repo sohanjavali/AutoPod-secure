@@ -28,18 +28,19 @@ export interface ScriptResult {
 }
 
 export async function generateScript(
-  promptContext: PodcastConfig,
+promptContext: PodcastConfig,
   researchNotes: string
 ): Promise<ScriptResult> {
+  const maxTokens = promptContext.duration === 15 ? 7500 : 12000;
+
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
-    max_tokens: 6000,
+    max_tokens: maxTokens,
     betas: ["structured-outputs-2025-11-13"],
     system: [
       {
         type: "text",
-        text:
-          "You are a professional podcast script writer. Return ONLY valid JSON following the schema."
+        text: "You are a professional podcast script writer."
       }
     ],
     messages: [
@@ -57,8 +58,6 @@ export async function generateScript(
           description: { type: "string" },
           voices: {
             type: "array",
-            minItems: 3,
-            maxItems: 3,
             items: {
               type: "object",
               properties: {
@@ -98,5 +97,3 @@ export async function generateScript(
 
   return JSON.parse(text) as ScriptResult;
 }
-
-export default generateScript;
