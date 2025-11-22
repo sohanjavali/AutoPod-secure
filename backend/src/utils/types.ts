@@ -49,7 +49,7 @@ export interface ScriptLine {
   emotion: string;
 }
 
-export interface PodcastTranscript {
+export interface PodcastEpisode {
   title: string;
   description: string;
   script: ScriptLine[];

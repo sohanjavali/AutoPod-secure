@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { generatePodcastController, validatePromptController } from "../controllers/podcast.controller.ts";
+import { authMiddleware } from "../middleware/authMiddleware.ts";
 
 const router = Router();
 
@@ -7,6 +8,6 @@ const router = Router();
 router.post("/validate-prompt", validatePromptController);
 
 // POST /api/generate-podcast - receives podcast parameters and generates a podcast
-router.post("/generate-podcast", generatePodcastController);
+router.post("/generate-podcast", authMiddleware, generatePodcastController);
 
 export default router;

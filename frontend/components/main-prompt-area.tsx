@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { createClient as createSupabaseClient } from '@/utiils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, Play, Save, ArrowRight } from 'lucide-react';
@@ -25,7 +25,6 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const [style, setStyle] = useState('Conversational');
   const [duration, setDuration] = useState(5);
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -33,10 +32,10 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const handleGeneratePodcast = async () => {
     const supabase = createSupabaseClient();
     
-    const { data, error } = await supabase.auth.getUser();
-    const user = data?.user;
+    const { data, error } = await supabase.auth.getSession();
+    const session = data?.session;
 
-    if (!user || error) {
+    if (!session || error) {
       setShowLoginModal(true);
       return;
     }
@@ -49,7 +48,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
     const validation = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/validate-prompt`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ prompt: prompt.trim() }),
     }).then(res => res.json());
@@ -66,6 +65,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Authorization": `Bearer ${session.access_token}`
       },
       body: JSON.stringify({
         prompt: validation.data.sanitizedTopic.trim(),
@@ -74,7 +74,16 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
       }),
     })
 
+    if (!generation.ok) {
+      const errorData = await generation.json();
+
+      setValidationError('An error occurred while generating the podcast. Try again.');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(false);
+    redirect('/library');
   };
 
   return (

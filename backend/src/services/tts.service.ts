@@ -1,8 +1,16 @@
 import { cartesiaClient, voices } from "../lib/cartesia.ts";
-import type { PodcastTranscript } from "../utils/types.ts";
-import { PassThrough } from "stream";
+import type { PodcastEpisode } from "../utils/types.ts";
+import { PassThrough, Readable } from "stream";
 
-export async function synthesizeSpeech(script: PodcastTranscript): Promise<PassThrough> {
+async function streamToBuffer(stream: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+export async function synthesizeSpeech(script: PodcastEpisode): Promise<Buffer> {
     const finalStream = new PassThrough();
 
     for (const line of script.script) {
@@ -26,6 +34,7 @@ export async function synthesizeSpeech(script: PodcastTranscript): Promise<PassT
     }
 
     finalStream.end();
+    const audioBuffer = await streamToBuffer(finalStream);
 
-    return finalStream;
+    return audioBuffer;
 }

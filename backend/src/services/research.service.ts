@@ -10,7 +10,7 @@ import { buildResearchPrompt } from "../utils/prompts.ts";
 import type { ResearchResult } from "../utils/types.ts";
 
 export async function researchPrompt(promptContext: PodcastConfig): Promise<ResearchResult> {
-  const maxTokens = promptContext.duration === 5 ? 1500 : 2500;
+  const maxTokens = promptContext.duration === 5 ? 2000 : 4000;
   
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",

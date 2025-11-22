@@ -3,9 +3,9 @@ import type { PodcastConfig } from "../utils/types.ts";
 import { validatePrompt } from "../services/validate.service.ts";
 import { researchPrompt } from "../services/research.service.ts";
 import { generateScript } from "../services/script.service.ts";
-import type { ValidateResult, ResearchResult, PodcastTranscript } from "../utils/types.ts";
+import type { ValidateResult, ResearchResult, PodcastEpisode } from "../utils/types.ts";
 import { synthesizeSpeech } from "../services/tts.service.ts";
-import fs from "fs";
+import { supabase } from "../lib/supabase.ts";
 
 // POST /api/validate-prompt
 export async function validatePromptController(
@@ -27,27 +27,63 @@ export async function generatePodcastController(
   req: Request,
   res: Response
 ): Promise<void> {
-  const podcastConfig = req.body as PodcastConfig;
+  const { prompt, style, duration, user } = req.body;
+  const podcastConfig = { prompt, style, duration, user } as PodcastConfig;
+
   const research: ResearchResult = await researchPrompt(podcastConfig);
-  const script: PodcastTranscript = await generateScript(
+  const script: PodcastEpisode = await generateScript(
     podcastConfig, 
     JSON.stringify(research)
   );
 
+  const synthesizedAudio = await synthesizeSpeech(script);
+  const userId = user.id;
 
-  console.log(script);
+  const safeTitle = script.title.replace(/[^a-zA-Z0-9-_]/g, "_");
+  const filePath = `podcasts/${userId}/${safeTitle}.mp3`;
 
-  const out = fs.createWriteStream("podcast.mp3");
-  const stream = await synthesizeSpeech(script);
+  const { error: uploadError } = await req.body.supabase.storage
+    .from("podcasts")
+    .upload(filePath, synthesizedAudio, {
+      contentType: "audio/mpeg",
+      upsert: true,
+    });
 
-  stream.pipe(out);
+  if (uploadError) {
+    console.error("Error uploading file:", uploadError);
+    res.status(500).json({ error: uploadError.message });
+    return;
+  }
 
-  // res.setHeader("Content-Type", "audio/mpeg");
-  // res.setHeader("Content-Disposition", "inline; filename=podcast.mp3");
+  console.log("File uploaded:", filePath);
 
-  // synthesizedAudio.pipe(res);
+  const date = new Date();
+  const formattedDate = date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
+  
+  const { data, error: insertError } = await req.body.supabase
+    .from("podcasts")
+    .insert({
+      created_at: formattedDate,
+      title: script.title,
+      description: script.description,
+      duration: duration,
+      style: style,
+      url: filePath, // store storage path, NOT public URL
+      author: userId,
+    })
+    .select("*")
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting DB row:", insertError);
+    res.status(500).json({ error: insertError.message });
+    return;
+  }
+
+  console.log("DB row inserted:", data);
 
   console.log("Podcast generation complete.");
+
   res.status(200).json({
     success: true,
     data: {

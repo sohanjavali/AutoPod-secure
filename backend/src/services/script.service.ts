@@ -7,13 +7,13 @@
 import type { PodcastConfig } from "../utils/types.ts";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildScriptPrompt } from "../utils/prompts.ts";
-import type { PodcastTranscript } from "../utils/types.ts";
+import type { PodcastEpisode } from "../utils/types.ts";
 import { voices } from "../lib/cartesia.ts";
 
 export async function generateScript(
 promptContext: PodcastConfig,
   researchNotes: string
-): Promise<PodcastTranscript> {
+): Promise<PodcastEpisode> {
   const maxTokens = promptContext.duration === 5 ? 4000 : 7000;
 
   const response = await anthropicClient.beta.messages.create({
@@ -63,8 +63,8 @@ promptContext: PodcastConfig,
   const text = (response?.content?.[0] as any)?.text;
 
   if (typeof text !== "string") {
-    return text as PodcastTranscript;
+    return text as PodcastEpisode;
   }
 
-  return JSON.parse(text) as PodcastTranscript;
+  return JSON.parse(text) as PodcastEpisode;
 }
