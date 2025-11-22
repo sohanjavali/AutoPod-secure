@@ -1,7 +1,3 @@
-/**
- * Shared TypeScript types for backend
- */
-
 export interface ApiError {
   message: string;
   code?: string;
@@ -13,7 +9,7 @@ export interface UserPayload {
   email: string;
 }
 
-export interface GeneratePodcastRequest {
+export interface PodcastConfig {
   prompt: string;
   style: string; 
   duration: number;  

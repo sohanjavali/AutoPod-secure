@@ -8,7 +8,7 @@ export interface Config {
   PORT?: number;
 }
 
-export function loadConfig(): Config {
+function loadConfig(): Config {
   const env = process.env;
 
   // Add missing required env vars to the list
@@ -28,3 +28,5 @@ export function loadConfig(): Config {
 
   return result as Config;
 }
+
+export const env = loadConfig();

@@ -1,7 +1,8 @@
 // backend/src/controllers/podcast.controller.ts
 import type { Request, Response, NextFunction } from "express";
-import type { GeneratePodcastRequest } from "../utils/types.ts";
+import type { PodcastConfig } from "../utils/types.ts";
 import { validatePrompt, type ValidateResult } from "../services/validate.service.ts";
+import { researchPrompt, type ResearchResult } from "../services/research.service.ts";
 // import { generateScript } from "../services/script.service.js";
 // import { getResearchNotes } from "../services/research.service";
 // import { synthesizeAudio } from "../services/tts.service";
@@ -34,10 +35,10 @@ export async function generatePodcastController(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { prompt, style, duration, language } = req.body as GeneratePodcastRequest;
+  const podcastConfig = req.body as PodcastConfig;
+  const research: ResearchResult = await researchPrompt(podcastConfig);
 
-  console.log({ prompt, style, duration, language });
-
+  console.log(research);
   // try {
   //   const {
   //     topic,

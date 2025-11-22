@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { loadConfig } from "../config/env.ts";
+import { anthropicClient } from "../lib/anthropic.ts";
 import { buildValidatePrompt } from "../utils/prompts.ts";
 
 export interface ValidateResult {
@@ -9,13 +8,7 @@ export interface ValidateResult {
 }
 
 export async function validatePrompt(prompt: string): Promise<ValidateResult> {
-  const env = loadConfig();
-
-  const anthropic = new Anthropic({
-    apiKey: env.ANTHROPIC_API_KEY
-  });
-
-  const response = await anthropic.beta.messages.create({
+  const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 150,
     betas: ["structured-outputs-2025-11-13"],

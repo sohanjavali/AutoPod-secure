@@ -2,13 +2,12 @@
 
 import express from "express";
 import cors from "cors";
-import { loadConfig } from "./config/env.ts"
+import { env } from "./config/env.ts";
 import healthRoutes from "./routes/health.routes.ts";
 import podcastRoutes from "./routes/podcast.routes.ts";
 import { rateLimit } from "express-rate-limit";
 
 const app = express();
-const env = loadConfig();
 
 // Global middleware
 app.use(cors());
