@@ -9,52 +9,6 @@ import { LoginModal } from '@/components/login-modal';
 
 const STYLE_PRESETS = ['Conversational', 'Educational', 'Entertaining', 'Professional'];
 
-// Languages supported in the UI (default: English)
-const LANGUAGE_PRESETS = [
-  { label: 'English', code: 'en' },
-  { label: 'French', code: 'fr' },
-  { label: 'German', code: 'de' },
-  { label: 'Spanish', code: 'es' },
-  { label: 'Portuguese', code: 'pt' },
-  { label: 'Chinese', code: 'zh' },
-  { label: 'Japanese', code: 'ja' },
-  { label: 'Hindi', code: 'hi' },
-  { label: 'Italian', code: 'it' },
-  { label: 'Korean', code: 'ko' },
-  { label: 'Dutch', code: 'nl' },
-  { label: 'Polish', code: 'pl' },
-  { label: 'Russian', code: 'ru' },
-  { label: 'Swedish', code: 'sv' },
-  { label: 'Turkish', code: 'tr' },
-  { label: 'Tagalog', code: 'tl' },
-  { label: 'Bulgarian', code: 'bg' },
-  { label: 'Romanian', code: 'ro' },
-  { label: 'Arabic', code: 'ar' },
-  { label: 'Czech', code: 'cs' },
-  { label: 'Greek', code: 'el' },
-  { label: 'Finnish', code: 'fi' },
-  { label: 'Croatian', code: 'hr' },
-  { label: 'Malay', code: 'ms' },
-  { label: 'Slovak', code: 'sk' },
-  { label: 'Danish', code: 'da' },
-  { label: 'Tamil', code: 'ta' },
-  { label: 'Ukrainian', code: 'uk' },
-  { label: 'Hungarian', code: 'hu' },
-  { label: 'Norwegian', code: 'no' },
-  { label: 'Vietnamese', code: 'vi' },
-  { label: 'Bengali', code: 'bn' },
-  { label: 'Thai', code: 'th' },
-  { label: 'Hebrew', code: 'he' },
-  { label: 'Georgian', code: 'ka' },
-  { label: 'Indonesian', code: 'id' },
-  { label: 'Telugu', code: 'te' },
-  { label: 'Gujarati', code: 'gu' },
-  { label: 'Kannada', code: 'kn' },
-  { label: 'Malayalam', code: 'ml' },
-  { label: 'Marathi', code: 'mr' },
-  { label: 'Punjabi', code: 'pa' },
-];
-
 interface GeneratedPodcast {
   id: string;
   title: string;
@@ -69,16 +23,11 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('Conversational');
-  const [duration, setDuration] = useState(10);
+  const [duration, setDuration] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [language, setLanguage] = useState('en');
   const [validationError, setValidationError] = useState<string | null>(null);
-
-  // Get label for selected language code
-  const selectedLanguageLabel =
-    LANGUAGE_PRESETS.find((l) => l.code === language)?.label ?? 'English';
 
   // Handle on click for the generate button
   const handleGeneratePodcast = async () => {
@@ -121,8 +70,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
       body: JSON.stringify({
         prompt: validation.data.sanitizedTopic.trim(),
         style,
-        duration,
-        language,
+        duration
       }),
     })
 
@@ -179,21 +127,9 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
                     ))}
                   </select>
 
-                  {/* Language dropdown */}
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="hover-pop rounded-full border border-blue-200/50 bg-blue-50/60 px-4 py-2 text-sm font-medium text-foreground transition-all focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300/30 dark:bg-secondary dark:border-border"
-                  >
-                    {LANGUAGE_PRESETS.map((l) => (
-                      <option key={l.code} value={l.code}>
-                        {l.label} ({l.code})
-                      </option>
-                    ))}
-                  </select>
                   {/* Length buttons */}
                   <div className="flex gap-3">
-                    {[10, 20].map((min) => (
+                    {[3, 6].map((min) => (
                       <button
                         key={min}
                         onClick={() => setDuration(min)}

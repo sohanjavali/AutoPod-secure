@@ -1,11 +1,6 @@
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildValidatePrompt } from "../utils/prompts.ts";
-
-export interface ValidateResult {
-  isValid: boolean;
-  reason: string;
-  sanitizedTopic: string;
-}
+import type { ValidateResult } from "../utils/types.ts";
 
 export async function validatePrompt(prompt: string): Promise<ValidateResult> {
   const response = await anthropicClient.beta.messages.create({

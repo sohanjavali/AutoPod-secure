@@ -7,31 +7,14 @@
 import type { PodcastConfig } from "../utils/types.ts";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildScriptPrompt } from "../utils/prompts.ts";
-
-export interface Voice {
-  name: string;
-  persona: string;
-}
-
-export interface ScriptLine {
-  lineNum: number;
-  speaker: string;
-  text: string;
-  emotion: string;
-}
-
-export interface ScriptResult {
-  title: string;
-  description: string;
-  voices: Voice[];
-  script: ScriptLine[];
-}
+import type { PodcastTranscript } from "../utils/types.ts";
+import { voices } from "../lib/cartesia.ts";
 
 export async function generateScript(
 promptContext: PodcastConfig,
   researchNotes: string
-): Promise<ScriptResult> {
-  const maxTokens = promptContext.duration === 10 ? 9000 : 15000;
+): Promise<PodcastTranscript> {
+  const maxTokens = promptContext.duration === 3 ? 4000 : 7000;
 
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
@@ -46,7 +29,7 @@ promptContext: PodcastConfig,
     messages: [
       {
         role: "user",
-        content: buildScriptPrompt(promptContext, researchNotes)
+        content: buildScriptPrompt(promptContext, researchNotes, voices)
       }
     ],
     output_format: {
@@ -56,18 +39,6 @@ promptContext: PodcastConfig,
         properties: {
           title: { type: "string" },
           description: { type: "string" },
-          voices: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                persona: { type: "string" }
-              },
-              required: ["name", "persona"],
-              additionalProperties: false
-            }
-          },
           script: {
             type: "array",
             items: {
@@ -92,8 +63,8 @@ promptContext: PodcastConfig,
   const text = (response?.content?.[0] as any)?.text;
 
   if (typeof text !== "string") {
-    return text as ScriptResult;
+    return text as PodcastTranscript;
   }
 
-  return JSON.parse(text) as ScriptResult;
+  return JSON.parse(text) as PodcastTranscript;
 }

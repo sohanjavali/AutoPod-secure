@@ -1,15 +1,31 @@
-/**
- * tts.service.ts
- * - Responsible for interacting with Cartesia.ai (or another TTS provider)
- * - Exposes a function to convert a script into an audio file and return a URL
- */
+import { cartesiaClient, voices } from "../lib/cartesia.ts";
+import type { PodcastTranscript } from "../utils/types.ts";
+import { PassThrough } from "stream";
 
-export interface TtsResult {
-  audioUrl: string;
-  durationSeconds?: number;
-}
+export async function synthesizeSpeech(script: PodcastTranscript): Promise<PassThrough> {
+    const finalStream = new PassThrough();
 
-export async function synthesizeSpeech(script: string, voice?: string): Promise<TtsResult> {
-  // TODO: call Cartesia API to generate audio, upload to storage/CDN, and return URL
-  throw new Error("synthesizeSpeech not implemented");
+    for (const line of script.script) {
+        const response = await cartesiaClient.tts.bytes({
+            modelId: "sonic-3",
+            voice: {
+                mode: "id",
+                id: voices[line.speaker]?.id || "228fca29-3a0a-435c-8728-5cb483251068"
+            },
+            outputFormat: {
+                container: "mp3",
+                sampleRate: 44100,
+                bitRate: 128000
+            },
+            transcript: line.text
+        });
+
+        for await (const chunk of response) {
+            finalStream.write(chunk);
+        }
+    }
+
+    finalStream.end();
+
+    return finalStream;
 }

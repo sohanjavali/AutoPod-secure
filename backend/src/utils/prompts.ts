@@ -1,4 +1,4 @@
-import type { PodcastConfig } from "./types.ts";
+import type { PodcastConfig, Voices } from "./types.ts";
 
 export const buildValidatePrompt = (prompt: string): string => {
   return (
@@ -55,7 +55,6 @@ export const buildResearchPrompt = (podcastConfig: PodcastConfig): string => {
     `User has submitted the topic: "${podcastConfig.prompt}".
     The desired podcast duration is approximately ${podcastConfig.duration} minutes.
     The desired style is: ${podcastConfig.style}.
-    The desired language is: ${podcastConfig.language}.
 
     Your task is to produce **research notes that could later be turned into a natural multi-person discussion**. The notes should contain the substance of what each participant could talk about in a real podcast. Include multiple perspectives, discussion points, and suggested facts.
 
@@ -95,10 +94,11 @@ export const buildResearchPrompt = (podcastConfig: PodcastConfig): string => {
 
 export const buildScriptPrompt = (
   podcastConfig: PodcastConfig,
-  researchNotes: string
+  researchNotes: string,
+  voices: Voices
 ): string => {
-  const targetWords = podcastConfig.duration === 10 ? 16000 : 32000;
-  const minLines = podcastConfig.duration === 10 ? 120 : 240;
+  const targetWords = podcastConfig.duration === 3 ? 500 : 1000;
+  const minLines = podcastConfig.duration === 3 ? 35 : 70;
   const minWords = Math.round(targetWords * 0.9);
   const maxWords = Math.round(targetWords * 1.1);
 
@@ -106,7 +106,6 @@ export const buildScriptPrompt = (
     `User topic: "${podcastConfig.prompt}"
     Desired duration: ~${podcastConfig.duration} minutes.
     Desired style: "${podcastConfig.style}".
-    Desired language: "${podcastConfig.language}".
 
     Research notes to use:
     ${researchNotes}
@@ -127,19 +126,12 @@ export const buildScriptPrompt = (
     ========================
     ### SPEAKERS (RANDOM NAMES)
     ========================
-    Choose EXACTLY three unique, realistic English first names at random.
-    Rules for names:
-    - simple/common first names only (e.g., Maya, Ryan, Chloe, Daniel)
-    - no last names
-    - no fantasy/sci-fi names
-    - all three names must be different
-    - once chosen, they MUST be used consistently everywhere.
-    Do NOT label them host1/host2/host3.
+    Choose EXACTLY three unique people as hosts/speakers for the podcast from the following list:
+    ['Tessa', 'Kiefer', 'Brandon', 'Joanie', 'Judith', 'Tanner']
 
     These names must appear in:
-    1) the "voices" array
-    2) EVERY "speaker" in "script"
-    3) the required intro
+    1) EVERY "speaker" in "script"
+    2) the required intro
 
     ========================
     ### REQUIRED INTRO (FIRST LINES)
@@ -297,9 +289,6 @@ export const buildScriptPrompt = (
     {
       "title": "string",
       "description": "string",
-      "voices": [
-        { "name": "string", "persona": "string" }
-      ],
       "script": [
         { "lineNum": number, "speaker": "string", "text": "string", "emotion": "string" }
       ]

@@ -7,23 +7,10 @@
 import type { PodcastConfig } from "../utils/types.ts";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildResearchPrompt } from "../utils/prompts.ts";
-
-export interface ResearchResult {
-  topic: string;
-  duration: number;
-  style: string;
-  language: string;
-  discussionPoints: {
-    title: string;
-    facts: string[];
-    perspectives: string[];
-    questions: string[];
-  }[];
-  citations: string[];
-}
+import type { ResearchResult } from "../utils/types.ts";
 
 export async function researchPrompt(promptContext: PodcastConfig): Promise<ResearchResult> {
-  const maxTokens = promptContext.duration === 10 ? 3000 : 5000;
+  const maxTokens = promptContext.duration === 3 ? 1500 : 2500;
   
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
