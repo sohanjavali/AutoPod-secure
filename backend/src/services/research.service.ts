@@ -23,7 +23,7 @@ export interface ResearchResult {
 }
 
 export async function researchPrompt(promptContext: PodcastConfig): Promise<ResearchResult> {
-  const maxTokens = promptContext.duration === 15 ? 3000 : 5000;
+  const maxTokens = promptContext.duration === 10 ? 3000 : 5000;
   
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",

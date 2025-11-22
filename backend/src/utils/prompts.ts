@@ -95,10 +95,10 @@ export const buildResearchPrompt = (podcastConfig: PodcastConfig): string => {
 
 export const buildScriptPrompt = (
   podcastConfig: PodcastConfig,
-  researchNotes: string,
-  targetWords: number,
-  minLines: number
+  researchNotes: string
 ): string => {
+  const targetWords = podcastConfig.duration === 10 ? 16000 : 32000;
+  const minLines = podcastConfig.duration === 10 ? 120 : 240;
   const minWords = Math.round(targetWords * 0.9);
   const maxWords = Math.round(targetWords * 1.1);
 
@@ -133,7 +133,7 @@ export const buildScriptPrompt = (
     - no last names
     - no fantasy/sci-fi names
     - all three names must be different
-    - once chosen, they MUST be used consistently everywhere
+    - once chosen, they MUST be used consistently everywhere.
     Do NOT label them host1/host2/host3.
 
     These names must appear in:
@@ -152,19 +152,38 @@ export const buildScriptPrompt = (
     3. One host clearly states the episode topic.
 
     ========================
-    ### TURN-LENGTH & CONVERSATION FLOW (VERY IMPORTANT)
+    ### CONVERSATION FLOW — NO SEQUENTIAL ORDER (CRITICAL)
     ========================
-    This should feel like 3 people talking in a room, not a textbook ping-pong.
+    The speakers MUST NOT talk in a repeating or predictable sequence.
 
-    Rules:
-    - Speakers MUST NOT follow a strict repeating order (no round-robin).
-    - Vary who speaks next naturally. It is normal for:
-      - one person to jump in twice in a row
-      - two people to back-and-forth while the third listens, then re-enters
-    - Each speaker turn should usually be 2–4 sentences.
-    - It is OK for a speaker to speak for 2 consecutive lines to finish a point.
-    - Avoid “one line each” cycles. Break the pattern.
-    - No speaker should disappear for too long: everyone re-enters at least every ~8–12 lines.
+    Hard bans:
+    - Do NOT use round-robin patterns like A→B→C→A→B→C…
+    - Do NOT keep alternating in a fixed loop, even loosely.
+    - If you notice yourself falling into a sequence, break it immediately.
+
+    Random/natural requirement:
+    - The next speaker must feel like a real interruption, follow-up, or jump-in.
+    - Choose the next speaker *based on the moment*, not a rotation.
+    - Conversations should feel slightly unpredictable, like a real podcast.
+
+    Concrete structure constraints:
+    - You MUST include frequent “sequence breaks.”
+      Examples of REQUIRED break patterns (use many of these):
+      - A → A → B → C
+      - A → B → B → C
+      - A → C → A → B
+      - B → A → C → C
+      - C → B → A → A
+    - At least 40% of the time, the same speaker speaks twice in a row
+      OR two speakers trade 2–3 turns while the third listens and re-enters later.
+
+    Turn length:
+    - Each turn should usually be 2–4 sentences.
+    - A speaker may take 2 consecutive lines to finish a point or story.
+    - Avoid one-sentence ping-pong.
+
+    Balance:
+    - No one disappears too long: every speaker returns at least every ~8–12 lines.
 
     ========================
     ### PODCAST FEEL (MANDATORY)
@@ -177,55 +196,59 @@ export const buildScriptPrompt = (
     - opinions / takes
     - at least one disagreement or contrast of viewpoints
     - a quick example / analogy / story
-    - a question that changes direction slightly
+    - a question that shifts or explores a new angle
 
     Natural podcast behaviors to include:
-    - “Wait, hold on…” / “That’s a good point…” / “I’m not sure I agree…”
-    - small clarifications or follow-ups
-    - occasional light humor if style allows
+    - “Wait, hold on…”
+    - “I’m not sure I agree…”
+    - “That’s actually really interesting…”
+    - clarifications, follow-ups, small interjections
+    - light humor if the chosen style allows
 
-    Do NOT sound like reading bullet points.
-    Do NOT stack facts back-to-back without human commentary.
+    Do NOT:
+    - sound like reading bullet points
+    - stack facts without commentary
+    - drift into textbook tone
 
     ========================
     ### NOVELTY / NO-REPEAT RULE
     ========================
-    Do not repeat the same fact or statistic unless you add NEW value.
+    Do NOT repeat the same fact or statistic unless adding NEW value.
 
     Allowed:
     - revisiting a fact to interpret it differently
-    - adding a consequence, debate, or human angle
+    - adding a consequence, debate, or emotional angle
 
     Not allowed:
-    - restating identical numbers or events in multiple places
-    - “as we said earlier…” filler
+    - repeating identical numbers/events across different lines
+    - using filler like “as mentioned earlier”
 
-    Each new line should push the conversation forward with:
+    Each new line MUST push the conversation forward with:
     (a) a new fact, OR
     (b) a new interpretation, OR
-    (c) a new question, OR
-    (d) a new emotional/human angle.
+    (c) a probing question, OR
+    (d) a human/emotional insight.
 
     ========================
     ### STYLE DEFINITIONS (ONLY THESE 4)
     ========================
     - conversational → relaxed, friendly, casual like friends chatting.
-    - educational → teaching/explaining clearly with examples & analogies.
-    - entertaining → funny, lighthearted, playful jokes (not cringe).
-    - professional → formal, polished, confident, structured tone.
+    - educational → clear explanations, analogies, smooth teaching flow.
+    - entertaining → playful, funny, light jokes (non-cringe).
+    - professional → polished, structured, confident, formal tone.
 
-    The script MUST reflect the selected style consistently.
+    The script MUST reflect the chosen style.
 
     ========================
     ### EMOTION RULES (MANDATORY)
     ========================
-    Every single script line MUST include an "emotion" field.
+    Every script line MUST include an "emotion" field.
 
     Emotion rule:
-    - If it is very clear the line aligns with an emotion, you MUST use that emotion.
-    - If none fit well, the emotion MUST be "none".
+    - If the line clearly reflects an emotion, choose that emotion.
+    - If no emotion fits, use "none".
 
-    Allowed emotion values (MUST match exactly):
+    Allowed emotion values:
     happy, excited, enthusiastic, elated, euphoric, triumphant, amazed, surprised, flirtatious,
     joking/comedic, curious, content, peaceful, serene, calm, grateful, affectionate, trust,
     sympathetic, anticipation, mysterious, angry, mad, outraged, frustrated, agitated, threatened,
@@ -235,7 +258,7 @@ export const buildScriptPrompt = (
     distant, skeptical, contemplative, determined, none
 
     Laughter:
-    - If a host laughs, write it ONLY inside text as: [laughter]
+    - If a host laughs, write it ONLY inside the text as “[laughter]”.
 
     ========================
     ### REQUIRED RULES
@@ -243,28 +266,27 @@ export const buildScriptPrompt = (
     1. Write a complete natural script long enough for ~${podcastConfig.duration} minutes
       AND within the required word range.
       - smooth transitions
-      - short, speakable sentences
-      - pacing that feels like a real podcast
+      - speakable pacing
+      - natural movement between ideas
 
-    2. Integrate the research notes naturally:
-      - facts, context, examples, perspectives
+    2. Integrate the research notes naturally.
       - no bullet points
-      - no meta talk like “here are the notes”
+      - no “here are the notes” meta talk
 
     3. Real podcast dynamics:
-      - all 3 hosts contribute throughout
+      - all 3 hosts participate throughout
       - they ask each other questions
-      - occasional disagreement / debate where appropriate
+      - disagreements and nuanced takes
 
-    4. Audio-only suitability:
-      - no visual-only references
+    4. Audio-only suitable:
+      - no visuals
       - no markdown
-      - no meta commentary about being an AI
+      - no meta commentary about AI or instructions
 
     ========================
     ### TITLE & DESCRIPTION
     ========================
-    - Title must be clear and literal about the topic.
+    - Title must clearly state the topic.
     - Description must be EXACTLY ONE sentence.
 
     ========================

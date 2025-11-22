@@ -31,7 +31,7 @@ export async function generateScript(
 promptContext: PodcastConfig,
   researchNotes: string
 ): Promise<ScriptResult> {
-  const maxTokens = promptContext.duration === 15 ? 7500 : 12000;
+  const maxTokens = promptContext.duration === 10 ? 9000 : 15000;
 
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",

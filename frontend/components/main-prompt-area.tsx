@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient as createSupabaseClient } from '@/utiils/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, Play, Save, ArrowRight } from 'lucide-react';
 import { LoginModal } from '@/components/login-modal';
 
@@ -70,7 +69,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('Conversational');
-  const [duration, setDuration] = useState(15);
+  const [duration, setDuration] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPodcast, setGeneratedPodcast] = useState<GeneratedPodcast | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -194,7 +193,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
                   </select>
                   {/* Length buttons */}
                   <div className="flex gap-3">
-                    {[15, 30].map((min) => (
+                    {[10, 20].map((min) => (
                       <button
                         key={min}
                         onClick={() => setDuration(min)}
