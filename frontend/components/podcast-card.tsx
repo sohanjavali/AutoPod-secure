@@ -36,26 +36,17 @@ export function PodcastCard({
   const gainRef = useRef<GainNode | null>(null);
   const BOOST_GAIN = 1.6; // increase as needed, beware clipping
 
+  // Handle playback when showPlayer or url changes
   useEffect(() => {
-    // When showing the player, try to start playback if a URL exists.
     if (showPlayer && url) {
       const p = audioRef.current?.play();
-      if (p && typeof p.then === 'function') {
-        p.catch(() => {
-          // Autoplay might be blocked by browser - that's okay.
-        });
-      }
     } else {
-      // If hiding the player, pause playback
-      try {
-        audioRef.current?.pause();
-      } catch (e) {
-        // ignore
-      }
+      audioRef.current?.pause();
       setIsPlaying(false);
     }
   }, [showPlayer, url]);
 
+  // Track audio element events to update UI state
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -72,8 +63,6 @@ export function PodcastCard({
     audio.addEventListener('pause', onPause);
     audio.addEventListener('ended', onEnded);
 
-  // volume is controlled by the user's system — do not manage it in UI
-
     return () => {
       audio.removeEventListener('loadedmetadata', onLoaded);
       audio.removeEventListener('timeupdate', onTime);
@@ -83,38 +72,30 @@ export function PodcastCard({
     };
   }, [url, showPlayer]);
 
-  // Amplify playback using WebAudio GainNode. This is opportunistic — if
-  // creating a MediaElementSource fails (CORS or already connected), we
-  // silently fall back to the native element volume.
+  // Amplify playback using WebAudio GainNode
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
     if (!showPlayer || !url) return;
 
-    // Set crossOrigin to reduce CORS issues when creating MediaElementSource
-    // (must be set before src in some browsers; here it's best-effort).
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (audio as any).crossOrigin = 'anonymous';
-      audio.volume = 1;
-      audio.muted = false;
-    } catch (e) {}
+    (audio as any).crossOrigin = 'anonymous';
+    audio.volume = 1;
+    audio.muted = false;
 
     // If we've already created nodes, just ensure gain value
     if (gainRef.current) {
-      try {
-        gainRef.current.gain.value = BOOST_GAIN;
-      } catch (e) {}
+      gainRef.current.gain.value = BOOST_GAIN;
       return;
     }
 
+    // Create AudioContext and GainNode
     const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
 
     const ctx: AudioContext = new AudioCtx();
     audioCtxRef.current = ctx;
 
+    // If gain node creation fails, fall back to native audio
     try {
       const source = ctx.createMediaElementSource(audio);
       const gain = ctx.createGain();
@@ -125,33 +106,26 @@ export function PodcastCard({
       gainRef.current = gain;
 
       ctx.resume().catch(() => {});
+
     } catch (e) {
-      // fallback: close context and clear refs
-      try {
-        ctx.close().catch(() => {});
-      } catch (err) {}
+      ctx.close().catch(() => {});
       audioCtxRef.current = null;
       sourceRef.current = null;
       gainRef.current = null;
-      // leave native audio as-is
     }
 
     return () => {
-      try {
-        sourceRef.current?.disconnect();
-      } catch (e) {}
-      try {
-        gainRef.current?.disconnect();
-      } catch (e) {}
-      try {
-        audioCtxRef.current?.close();
-      } catch (e) {}
+      sourceRef.current?.disconnect();
+      gainRef.current?.disconnect();
+      audioCtxRef.current?.close();
+     
       audioCtxRef.current = null;
       sourceRef.current = null;
       gainRef.current = null;
     };
   }, [showPlayer, url]);
 
+  // Format time in seconds to M:SS
   function formatTime(s: number) {
     if (!s || isNaN(s)) return '0:00';
     const m = Math.floor(s / 60);
@@ -200,7 +174,6 @@ export function PodcastCard({
           {url ? (
             <div className="flex flex-col gap-3">
               {/* Hidden native audio element used for playback control */}
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <audio ref={audioRef} src={url} className="hidden" />
 
               {/* Custom player UI */}
@@ -211,16 +184,12 @@ export function PodcastCard({
                     const audio = audioRef.current;
                     if (!audio) return;
 
-                    try {
-                      if (audio.paused) {
-                        await audio.play();
-                        setIsPlaying(true);
-                      } else {
-                        audio.pause();
-                        setIsPlaying(false);
-                      }
-                    } catch (e) {
-                      // play() may be blocked by browser autoplay policies; ignore.
+                    if (audio.paused) {
+                      await audio.play();
+                      setIsPlaying(true);
+                    } else {
+                      audio.pause();
+                      setIsPlaying(false);
                     }
                   }}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground hover:bg-accent/90"
@@ -247,8 +216,6 @@ export function PodcastCard({
                     <span>{formatTime(durationSec)}</span>
                   </div>
                 </div>
-
-                {/* volume controls removed - rely on system volume */}
               </div>
 
               <div className="text-xs text-muted-foreground">{isPlaying ? 'Playing' : 'Paused'}</div>
