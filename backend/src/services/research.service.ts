@@ -10,8 +10,10 @@ import { buildResearchPrompt } from "../utils/prompts.ts";
 import type { ResearchResult } from "../utils/types.ts";
 
 export async function researchPrompt(promptContext: PodcastConfig): Promise<ResearchResult> {
+  // Determine max tokens based on podcast duration
   const maxTokens = promptContext.duration === 5 ? 2000 : 4000;
   
+  // Call the Anthropic API to get research notes in JSON format
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: maxTokens,
