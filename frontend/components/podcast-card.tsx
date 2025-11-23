@@ -31,6 +31,10 @@ export function PodcastCard({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [durationSec, setDurationSec] = useState(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const BOOST_GAIN = 1.6; // increase as needed, beware clipping
 
   useEffect(() => {
     // When showing the player, try to start playback if a URL exists.
@@ -78,6 +82,75 @@ export function PodcastCard({
       audio.removeEventListener('ended', onEnded);
     };
   }, [url, showPlayer]);
+
+  // Amplify playback using WebAudio GainNode. This is opportunistic — if
+  // creating a MediaElementSource fails (CORS or already connected), we
+  // silently fall back to the native element volume.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!showPlayer || !url) return;
+
+    // Set crossOrigin to reduce CORS issues when creating MediaElementSource
+    // (must be set before src in some browsers; here it's best-effort).
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (audio as any).crossOrigin = 'anonymous';
+      audio.volume = 1;
+      audio.muted = false;
+    } catch (e) {}
+
+    // If we've already created nodes, just ensure gain value
+    if (gainRef.current) {
+      try {
+        gainRef.current.gain.value = BOOST_GAIN;
+      } catch (e) {}
+      return;
+    }
+
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+
+    const ctx: AudioContext = new AudioCtx();
+    audioCtxRef.current = ctx;
+
+    try {
+      const source = ctx.createMediaElementSource(audio);
+      const gain = ctx.createGain();
+      gain.gain.value = BOOST_GAIN;
+      source.connect(gain).connect(ctx.destination);
+
+      sourceRef.current = source;
+      gainRef.current = gain;
+
+      ctx.resume().catch(() => {});
+    } catch (e) {
+      // fallback: close context and clear refs
+      try {
+        ctx.close().catch(() => {});
+      } catch (err) {}
+      audioCtxRef.current = null;
+      sourceRef.current = null;
+      gainRef.current = null;
+      // leave native audio as-is
+    }
+
+    return () => {
+      try {
+        sourceRef.current?.disconnect();
+      } catch (e) {}
+      try {
+        gainRef.current?.disconnect();
+      } catch (e) {}
+      try {
+        audioCtxRef.current?.close();
+      } catch (e) {}
+      audioCtxRef.current = null;
+      sourceRef.current = null;
+      gainRef.current = null;
+    };
+  }, [showPlayer, url]);
 
   function formatTime(s: number) {
     if (!s || isNaN(s)) return '0:00';
