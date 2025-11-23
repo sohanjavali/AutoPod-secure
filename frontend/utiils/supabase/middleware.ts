@@ -7,16 +7,12 @@ export function createMiddlewareSupabaseClient(req: NextRequest) {
   // Provide a minimal cookies adapter for createServerClient using Next.js middleware request
   const cookiesAdapter = {
     getAll() {
-      try {
-        // NextRequest.cookies may expose getAll in some runtimes
+      // NextRequest.cookies may expose getAll in some runtimes
+      // @ts-ignore
+      if (typeof req.cookies.getAll === 'function') {
+        // Each item has { name, value }
         // @ts-ignore
-        if (typeof req.cookies.getAll === 'function') {
-          // Each item has { name, value }
-          // @ts-ignore
-          return req.cookies.getAll().map((c: any) => ({ name: c.name, value: c.value })) as CookieEntry[]
-        }
-      } catch (err) {
-        // fallthrough to manual collection
+        return req.cookies.getAll().map((c: any) => ({ name: c.name, value: c.value })) as CookieEntry[]
       }
 
       // Fallback: read known cookie names
@@ -26,9 +22,6 @@ export function createMiddlewareSupabaseClient(req: NextRequest) {
       const refresh = req.cookies.get('autopod_refresh_token')?.value
       if (refresh) entries.push({ name: 'autopod_refresh_token', value: refresh })
       return entries
-    },
-    setAll(_cookies: CookieEntry[]) {
-      // Middleware cannot set cookies via this adapter. No-op.
     },
   }
 
