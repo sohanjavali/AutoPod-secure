@@ -5,7 +5,6 @@ import { researchPrompt } from "../services/research.service.ts";
 import { generateScript } from "../services/script.service.ts";
 import type { ValidateResult, ResearchResult, PodcastEpisode } from "../utils/types.ts";
 import { synthesizeSpeech } from "../services/tts.service.ts";
-import { supabase } from "../lib/supabase.ts";
 
 // POST /api/validate-prompt
 export async function validatePromptController(
@@ -55,11 +54,9 @@ export async function generatePodcastController(
     return;
   }
 
-  console.log("File uploaded:", filePath);
-
   const date = new Date();
   const formattedDate = date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
-  
+
   const { data, error: insertError } = await req.body.supabase
     .from("podcasts")
     .insert({
@@ -68,11 +65,9 @@ export async function generatePodcastController(
       description: script.description,
       duration: duration,
       style: style,
-      url: filePath, // store storage path, NOT public URL
+      url: filePath,
       author: userId,
     })
-    .select("*")
-    .single();
 
   if (insertError) {
     console.error("Error inserting DB row:", insertError);
@@ -80,14 +75,28 @@ export async function generatePodcastController(
     return;
   }
 
-  console.log("DB row inserted:", data);
+  res.status(200).json({ success: true });
+}
 
-  console.log("Podcast generation complete.");
+// POST /api/get-podcasts
+export async function getPodcastsController(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const user = req.body.user;
+  const userId = user.id;
 
-  res.status(200).json({
-    success: true,
-    data: {
-      message: "Podcast generation initiated. Check server logs for progress."
-    }
-  });
+  const { data, error } = await req.body.supabase
+    .from("podcasts")
+    .select("*")
+    .eq("author", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching podcasts:", error);
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(200).json({ success: true, data });
 }

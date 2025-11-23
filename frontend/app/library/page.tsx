@@ -1,90 +1,75 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { redirect } from 'next/navigation';
 import { Header } from '@/components/header';
 import { PodcastCard } from '@/components/podcast-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { createClient as createSupabaseClient } from '@/utiils/supabase/client';
 
-const MOCK_PODCASTS = [
-  {
-    id: 'podcast-1',
-    title: 'Quantum Tunneling: Why Particles Cheat Walls',
-    topic: 'Quantum Physics',
-    duration: 30,
-    tone: 'Calm Professor',
-    style: 'Dialogue',
-    speakers: 2,
-    description: 'A deep dive into one of quantum mechanics\' most fascinating phenomena.',
-    hasQuiz: true,
-    createdDate: '2 days ago',
-  },
-  {
-    id: 'podcast-2',
-    title: 'The History of Jazz in America',
-    topic: 'Music History',
-    duration: 15,
-    tone: 'Storytelling',
-    style: 'Monologue',
-    speakers: 1,
-    description: 'Explore the roots and evolution of jazz from New Orleans to the modern day.',
-    hasQuiz: false,
-    createdDate: '5 days ago',
-  },
-  {
-    id: 'podcast-3',
-    title: 'Machine Learning: From Theory to Practice',
-    topic: 'Artificial Intelligence',
-    duration: 30,
-    tone: 'Friendly Tutor',
-    style: 'Dialogue',
-    speakers: 2,
-    description: 'An accessible introduction to machine learning concepts and real-world applications.',
-    hasQuiz: true,
-    createdDate: '1 week ago',
-  },
-  {
-    id: 'podcast-4',
-    title: 'The Future of Renewable Energy',
-    topic: 'Clean Energy',
-    duration: 30,
-    tone: 'Debate Mode',
-    style: 'Debate',
-    speakers: 2,
-    description: 'Two experts debate the viability and future of renewable energy sources.',
-    hasQuiz: false,
-    createdDate: '1 week ago',
-  },
-  {
-    id: 'podcast-5',
-    title: 'Ancient Rome: The Gladiatorial System',
-    topic: 'History',
-    duration: 15,
-    tone: 'Comedic Explainer',
-    style: 'Monologue',
-    speakers: 1,
-    description: 'Learn about the fascinating and brutal world of ancient Roman gladiators.',
-    hasQuiz: true,
-    createdDate: '2 weeks ago',
-  },
-];
+interface Podcast {
+  id: string;
+  created_at: string
+  title: string;
+  duration: number;
+  url: string;
+  style: string;
+  description: string;
+}
 
 export default function LibraryPage() {
-  const [podcasts, setPodcasts] = useState(MOCK_PODCASTS);
+  const [podcasts, setPodcasts] = useState<Podcast[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [durationFilter, setDurationFilter] = useState('all');
   const [toneFilter, setToneFilter] = useState('all');
   const [styleFilter, setStyleFilter] = useState('all');
 
+  useEffect(() => {
+    async function fetchPodcasts() {
+      setIsLoading(true);
+      const supabase = createSupabaseClient();
+      
+      const { data, error } = await supabase.auth.getSession();
+      const session = data?.session;
+
+      if (!session || error) {
+        redirect('/');
+      }
+
+      // Fetch podcasts from backend API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/get-podcasts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({}),
+      }).then(res => res.json());
+
+      if (!response.success) {
+        setIsLoading(false);
+        redirect('/');
+      }
+
+      setPodcasts(response.data as Podcast[]);
+      setIsLoading(false);
+
+      console.log(response);
+    }
+
+    fetchPodcasts();
+  }, []);
+
   const filteredPodcasts = podcasts.filter((podcast) => {
     const matchesSearch = podcast.title.toLowerCase().includes(search.toLowerCase()) ||
-      podcast.topic.toLowerCase().includes(search.toLowerCase());
+      podcast.title.toLowerCase().includes(search.toLowerCase());
     const matchesDuration = durationFilter === 'all' || podcast.duration === Number(durationFilter);
-    const matchesTone = toneFilter === 'all' || podcast.tone === toneFilter;
     const matchesStyle = styleFilter === 'all' || podcast.style === styleFilter;
 
-    return matchesSearch && matchesDuration && matchesTone && matchesStyle;
+    return matchesSearch && matchesDuration && matchesStyle;
   });
 
   const handleDelete = (id: string) => {
@@ -130,8 +115,8 @@ export default function LibraryPage() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 >
                   <option value="all">All</option>
-                  <option value="15">15 min</option>
-                  <option value="30">30 min</option>
+                  <option value="15">5 min</option>
+                  <option value="30">10 min</option>
                 </select>
               </div>
 
@@ -143,33 +128,22 @@ export default function LibraryPage() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 >
                   <option value="all">All</option>
-                  <option value="Calm Professor">Calm Professor</option>
-                  <option value="Friendly Tutor">Friendly Tutor</option>
-                  <option value="Debate Mode">Debate Mode</option>
-                  <option value="Storytelling">Storytelling</option>
-                  <option value="Comedic Explainer">Comedic Explainer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-foreground">Style</label>
-                <select
-                  value={styleFilter}
-                  onChange={(e) => setStyleFilter(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
-                >
-                  <option value="all">All</option>
-                  <option value="Monologue">Monologue</option>
-                  <option value="Dialogue">Dialogue</option>
-                  <option value="Debate">Debate</option>
-                  <option value="Story Mode">Story Mode</option>
+                  <option value="Calm Professor">Conversational</option>
+                  <option value="Friendly Tutor">Educational</option>
+                  <option value="Debate Mode">Entertaining</option>
+                  <option value="Storytelling">Professional</option>
                 </select>
               </div>
             </div>
           </div>
 
           {/* Podcast Grid */}
-          {filteredPodcasts.length > 0 ? (
+          {isLoading ? (
+            <div className="rounded-xl border-2 border-dashed border-border bg-secondary/30 p-12 text-center animate-pulse" aria-busy>
+              <div className="mb-3 text-4xl">⏳</div>
+              <p className="text-muted-foreground">Loading podcasts…</p>
+            </div>
+          ) : filteredPodcasts.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredPodcasts.map((podcast) => (
                 <PodcastCard

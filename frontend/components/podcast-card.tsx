@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -7,29 +8,21 @@ import { Badge } from '@/components/ui/badge';
 
 interface PodcastCardProps {
   id: string;
+  created_at: string;
   title: string;
-  topic: string;
   duration: number;
-  tone: string;
   style: string;
-  speakers: number;
   description: string;
-  hasQuiz?: boolean;
-  createdDate: string;
   onDelete?: (id: string) => void;
 }
 
 export function PodcastCard({
   id,
+  created_at,
   title,
-  topic,
   duration,
-  tone,
   style,
-  speakers,
   description,
-  hasQuiz,
-  createdDate,
   onDelete,
 }: PodcastCardProps) {
   return (
@@ -37,7 +30,6 @@ export function PodcastCard({
       <div className="mb-3 flex items-start justify-between">
         <div>
           <h3 className="line-clamp-2 text-lg font-semibold text-foreground">{title}</h3>
-          <p className="text-sm text-muted-foreground">{topic}</p>
         </div>
       </div>
 
@@ -45,13 +37,10 @@ export function PodcastCard({
 
       <div className="mb-4 flex flex-wrap gap-2">
         <Badge variant="secondary">{duration}m</Badge>
-        <Badge variant="secondary">{tone}</Badge>
         <Badge variant="secondary">{style}</Badge>
-        {speakers && <Badge variant="secondary">{speakers} speaker{speakers !== 1 ? 's' : ''}</Badge>}
-        {hasQuiz && <Badge className="bg-accent text-accent-foreground">Quiz</Badge>}
       </div>
 
-      <p className="mb-4 text-xs text-muted-foreground">Created {createdDate}</p>
+      <p className="mb-4 text-xs text-muted-foreground">Created {created_at}</p>
 
       <div className="flex gap-2">
         <Button asChild className="flex-1 bg-accent hover:bg-accent/90">
