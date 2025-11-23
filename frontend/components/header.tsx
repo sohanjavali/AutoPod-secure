@@ -24,8 +24,8 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => setIsMounted(true), []);
 
+  // If parent didn't supply isLoggedIn, detect via Supabase in the browser
   useEffect(() => {
-    // If parent didn't supply isLoggedIn, detect via Supabase in the browser
     if (typeof isLoggedIn === 'undefined') {
       const supabase = createSupabaseClient();
 
@@ -66,6 +66,7 @@ export function Header({ isLoggedIn, onLogout }: HeaderProps) {
 
   const resolvedLoggedIn = typeof isLoggedIn === 'boolean' ? isLoggedIn : !!localLoggedIn;
 
+  // Handle user logout
   const handleLogout = async () => {
     if (onLogout) return onLogout();
 
