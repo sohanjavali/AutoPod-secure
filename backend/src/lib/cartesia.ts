@@ -16,8 +16,8 @@ export const voices: Voices = {
     persona: "Easygoing Ally",
     id: "cbaf8084-f009-4838-a096-07ee2e6612b1"
   },
-  "Kiefer":{
-    persona: "Assured Tone",
+  "Leo":{
+    persona: "0834f3df-e650-4766-a20c-5a93a43aa6e3",
     id: "228fca29-3a0a-435c-8728-5cb483251068"
   },
   "Brandon": {
@@ -32,8 +32,8 @@ export const voices: Voices = {
     persona: "Poised Strength",
     id: "4d3d2e9c-14e4-4802-a8d8-bd5268a73fde"
   },
-  "Tanner": {
-    persona: "Laidback Spirit",
-    id: "373e661a-f0ef-4e34-a09e-183184a443e6"
+  "Kyle": {
+    persona: "Approachable Friend",
+    id: "c961b81c-a935-4c17-bfb3-ba2239de8c2f"
   }
 };

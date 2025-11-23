@@ -130,7 +130,7 @@ export const buildScriptPrompt = (
     ### SPEAKERS (RANDOM NAMES)
     ========================
     Choose EXACTLY three unique people as hosts/speakers for the podcast from the following list:
-    ['Maya', 'Kiefer', 'Brandon', 'Joanie', 'Judith', 'Tanner']
+    ['Maya', 'Leo', 'Brandon', 'Joanie', 'Judith', 'Kyle']
 
     These names must appear in:
     1) EVERY "speaker" in "script"
