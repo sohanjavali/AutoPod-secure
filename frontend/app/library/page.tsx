@@ -30,8 +30,9 @@ export default function LibraryPage() {
   useEffect(() => {
     async function fetchPodcasts() {
       setIsLoading(true);
+
+      // Ensure user is authenticated
       const supabase = createSupabaseClient();
-      
       const { data, error } = await supabase.auth.getSession();
       const session = data?.session;
 
@@ -49,20 +50,20 @@ export default function LibraryPage() {
         body: JSON.stringify({}),
       }).then(res => res.json());
 
+      // If not successful, redirect to home
       if (!response.success) {
         setIsLoading(false);
         redirect('/');
       }
 
       setPodcasts(response.data as Podcast[]);
-
-      console.log("Fetched podcasts:", response.data);
       setIsLoading(false);
     }
 
     fetchPodcasts();
   }, []);
 
+  // Apply filters
   const filteredPodcasts = podcasts.filter((podcast) => {
     const matchesSearch = podcast.title.toLowerCase().includes(search.toLowerCase()) ||
       podcast.title.toLowerCase().includes(search.toLowerCase());
@@ -72,6 +73,7 @@ export default function LibraryPage() {
     return matchesSearch && matchesDuration && matchesStyle;
   });
 
+  // TODO: Implement delete functionality
   const handleDelete = (id: string) => {
     setPodcasts(podcasts.filter((p) => p.id !== id));
   };
