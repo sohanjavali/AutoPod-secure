@@ -11,35 +11,30 @@ export default function AuthCallbackPage() {
     const finishAuth = async () => {
       const supabase = createSupabaseClient()
 
-      // supabase-js stores session in browser storage after redirect
+      // Get session from Supabase Auth
       const { data, error } = await supabase.auth.getSession()
       if (error) {
-        console.error('Error getting session after OAuth redirect', error)
         router.replace('/')
         return
       }
 
+      // Check if session exists
       const session = data?.session
       if (!session) {
-        // No session, go home
         router.replace('/')
         return
       }
 
       // Send tokens to server to set HttpOnly cookies so middleware can read them
-      try {
-        await fetch('/api/auth/set-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at,
-          }),
-        })
-      } catch (err) {
-        console.error('Failed to persist session to cookie', err)
-      }
+      await fetch('/api/auth/set-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_at: session.expires_at,
+        }),
+      })
 
       // Redirect to dashboard after cookies set
       router.replace('/library')
