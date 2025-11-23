@@ -3,6 +3,7 @@ import { buildValidatePrompt } from "../utils/prompts.ts";
 import type { ValidateResult } from "../utils/types.ts";
 
 export async function validatePrompt(prompt: string): Promise<ValidateResult> {
+  // Call the Anthropic API to validate the prompt
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 150,
