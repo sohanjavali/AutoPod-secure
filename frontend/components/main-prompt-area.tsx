@@ -30,8 +30,8 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
 
   // Handle on click for the generate button
   const handleGeneratePodcast = async () => {
+    // Ensure user is authenticated
     const supabase = createSupabaseClient();
-    
     const { data, error } = await supabase.auth.getSession();
     const session = data?.session;
 
@@ -74,6 +74,7 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
       }),
     })
 
+    // Handle generation errors
     if (!generation.ok) {
       const errorData = await generation.json();
 
