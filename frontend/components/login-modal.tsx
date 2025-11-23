@@ -43,8 +43,7 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
         return;
       }
 
-      // If signup returns a user but no session, Supabase will have sent a verification email.
-      // Do not consider sign-up complete until the user verifies their email.
+      // Do not consider sign-up complete until the user verifies their email
       if (data?.user && !data.session) {
         setVerificationSent(true);
         setIsLoading(false);
@@ -73,9 +72,9 @@ export function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
         return;
       }
 
+      // Persist tokens to HttpOnly cookies so middleware can read them
       if (data?.session) {
         sessionCreated = true;
-        // Persist tokens to HttpOnly cookies so middleware can read them
         await fetch('/api/auth/set-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
