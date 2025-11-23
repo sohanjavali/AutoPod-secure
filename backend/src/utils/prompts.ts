@@ -1,5 +1,6 @@
 import type { PodcastConfig, Voices } from "./types.ts";
 
+// Builds a prompt to validate a user-submitted podcast topic
 export const buildValidatePrompt = (prompt: string): string => {
   return (
       `A user has submitted the following topic for a podcast episode: "${prompt}"
@@ -50,6 +51,7 @@ export const buildValidatePrompt = (prompt: string): string => {
   )
 }
 
+// Builds a prompt to generate research notes for a podcast episode
 export const buildResearchPrompt = (podcastConfig: PodcastConfig): string => {
   return (
     `User has submitted the topic: "${podcastConfig.prompt}".
@@ -92,6 +94,7 @@ export const buildResearchPrompt = (podcastConfig: PodcastConfig): string => {
   )
 }
 
+// Builds a prompt to generate a podcast script based on research notes
 export const buildScriptPrompt = (
   podcastConfig: PodcastConfig,
   researchNotes: string,
