@@ -29,15 +29,18 @@ export async function generatePodcastController(
   const { prompt, style, duration, user } = req.body;
   const podcastConfig = { prompt, style, duration, user } as PodcastConfig;
 
+  // Perform research and generate a script for the podcast
   const research: ResearchResult = await researchPrompt(podcastConfig);
   const script: PodcastEpisode = await generateScript(
     podcastConfig, 
     JSON.stringify(research)
   );
 
+  // Convert the script into an MP3 audio file
   const synthesizedAudio = await synthesizeSpeech(script);
   const userId = user.id;
 
+  // Store the podcast audio file in Supabase Storage
   const safeTitle = script.title.replace(/[^a-zA-Z0-9-_]/g, "_");
   const filePath = `podcasts/${userId}/${safeTitle}.mp3`;
 
@@ -54,6 +57,7 @@ export async function generatePodcastController(
     return;
   }
 
+  // Insert podcast metadata into the Supabase database
   const date = new Date();
   const formattedDate = date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
 
@@ -98,27 +102,17 @@ export async function getPodcastsController(
     return;
   }
 
-  console.log(data)
+  // Generate signed URLs for each podcast file (so the client can access them)
+  const result: Partial<PodcastEpisode>[] = [];
+  for (const podcast of data) {
+    let signedUrl: string
 
-  const podcasts = Array.isArray(data) ? (data as any[]) : [];
-  const result: any[] = [];
+    const { data: signedData, error: signError } = await req.body.supabase.storage
+      .from("podcasts")
+      .createSignedUrl(podcast.url, 60 * 60); // signedUrl valid for 1 hour
 
-  for (const podcast of podcasts) {
-    // Default to the raw stored path in case signing fails or isn't available
-    let signedUrl: string | undefined = podcast.url;
+    signedUrl = signedData.signedUrl;
 
-
-    if (podcast.url) {
-      const { data: signedData, error: signError } = await req.body.supabase.storage
-        .from("podcasts")
-        .createSignedUrl(podcast.url, 60 * 60); // 1 hour
-
-      if (!signError && signedData && (signedData as any).signedUrl) {
-        signedUrl = (signedData as any).signedUrl;
-      }
-    }
-
-    // Push a shallow copy of the podcast row with the replaced url
     result.push({
       ...podcast,
       url: signedUrl,
