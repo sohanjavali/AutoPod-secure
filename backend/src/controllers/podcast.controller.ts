@@ -98,5 +98,32 @@ export async function getPodcastsController(
     return;
   }
 
-  res.status(200).json({ success: true, data });
+  console.log(data)
+
+  const podcasts = Array.isArray(data) ? (data as any[]) : [];
+  const result: any[] = [];
+
+  for (const podcast of podcasts) {
+    // Default to the raw stored path in case signing fails or isn't available
+    let signedUrl: string | undefined = podcast.url;
+
+
+    if (podcast.url) {
+      const { data: signedData, error: signError } = await req.body.supabase.storage
+        .from("podcasts")
+        .createSignedUrl(podcast.url, 60 * 60); // 1 hour
+
+      if (!signError && signedData && (signedData as any).signedUrl) {
+        signedUrl = (signedData as any).signedUrl;
+      }
+    }
+
+    // Push a shallow copy of the podcast row with the replaced url
+    result.push({
+      ...podcast,
+      url: signedUrl,
+    });
+  }
+
+  res.status(200).json({ success: true, data: result });
 }

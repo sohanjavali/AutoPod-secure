@@ -68,7 +68,7 @@ export function PodcastCard({
     audio.addEventListener('pause', onPause);
     audio.addEventListener('ended', onEnded);
 
-  // no volume controls in UI: leave volume to system/default
+  // volume is controlled by the user's system — do not manage it in UI
 
     return () => {
       audio.removeEventListener('loadedmetadata', onLoaded);
@@ -134,12 +134,20 @@ export function PodcastCard({
               <div className="flex items-center gap-3">
                 <button
                   aria-label={isPlaying ? 'Pause' : 'Play'}
-                  onClick={() => {
-                    if (!audioRef.current) return;
-                    if (isPlaying) {
-                      audioRef.current.pause();
-                    } else {
-                      audioRef.current.play().catch(() => {});
+                  onClick={async () => {
+                    const audio = audioRef.current;
+                    if (!audio) return;
+
+                    try {
+                      if (audio.paused) {
+                        await audio.play();
+                        setIsPlaying(true);
+                      } else {
+                        audio.pause();
+                        setIsPlaying(false);
+                      }
+                    } catch (e) {
+                      // play() may be blocked by browser autoplay policies; ignore.
                     }
                   }}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground hover:bg-accent/90"

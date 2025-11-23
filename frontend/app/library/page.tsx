@@ -55,9 +55,9 @@ export default function LibraryPage() {
       }
 
       setPodcasts(response.data as Podcast[]);
-      setIsLoading(false);
 
-      console.log(response);
+      console.log("Fetched podcasts:", response.data);
+      setIsLoading(false);
     }
 
     fetchPodcasts();
