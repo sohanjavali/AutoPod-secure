@@ -11,11 +11,13 @@ import type { PodcastEpisode } from "../utils/types.ts";
 import { voices } from "../lib/cartesia.ts";
 
 export async function generateScript(
-promptContext: PodcastConfig,
+  promptContext: PodcastConfig,
   researchNotes: string
 ): Promise<PodcastEpisode> {
+  // Determine max tokens based on podcast duration
   const maxTokens = promptContext.duration === 5 ? 4000 : 7000;
 
+  // Call the Anthropic API to generate the podcast script in JSON format
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: maxTokens,
