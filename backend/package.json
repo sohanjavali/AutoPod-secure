@@ -21,7 +21,7 @@
     "experimentalSpecifierResolution": "node"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.70.1",
+    "@anthropic-ai/sdk": "^1.7.0",
     "@cartesia/cartesia-js": "^2.2.9",
     "@supabase/supabase-js": "^2.84.0",
     "cors": "^2.8.5",
