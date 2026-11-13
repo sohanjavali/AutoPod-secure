@@ -3,6 +3,8 @@ import { supabase } from "../lib/supabase.ts";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "../config/env.ts";
 import type { AppLocals } from "./locals.ts";
+import { setContextUserId } from "../lib/requestContext.ts";
+import { securityEvent } from "../lib/stepLog.ts";
 
 // Middleware to authenticate requests using Supabase Auth
 export async function authMiddleware(
@@ -16,17 +18,20 @@ export async function authMiddleware(
   const token = parts.length === 2 && parts[0]?.toLowerCase() === "bearer" ? parts[1] : undefined;
 
   if (!token) {
+    securityEvent("auth_failed", { reason: "missing_or_malformed_token" });
     res.status(401).json({ error: "Missing or malformed authorization token" });
     return;
   }
 
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) {
+    securityEvent("auth_failed", { reason: "invalid_token" });
     res.status(401).json({ error: "Invalid token" });
     return;
   }
 
   res.locals.user = data.user;
+  setContextUserId(data.user.id);
 
   // Supabase client acting as the user, for further operations
   res.locals.supabase = createClient(

@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { GuardrailError } from "../guardrails/errors.ts";
+import { getLog } from "../lib/requestContext.ts";
+import { clip, logger } from "../lib/logger.ts";
 
 // JSON 404 for unmatched routes
 export function notFoundHandler(_req: Request, res: Response): void {
@@ -9,7 +11,7 @@ export function notFoundHandler(_req: Request, res: Response): void {
 // Central error handler. Never leaks internals to the client.
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): void {
@@ -35,6 +37,13 @@ export function errorHandler(
     return;
   }
 
-  console.error("Unhandled error:", err);
+  // Stack stays in the server log only; the client gets the generic 500 below.
+  const log = getLog().bindings().requestId ? getLog() : logger.child({ requestId: String(req.id) });
+  log.error({
+    event: "unhandled_error",
+    errorName: err instanceof Error ? err.name : "NonError",
+    errorMessage: clip(err instanceof Error ? err.message : err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
   res.status(500).json({ error: "Internal server error" });
 }

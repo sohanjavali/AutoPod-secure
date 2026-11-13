@@ -4,7 +4,23 @@ import { validatePrompt } from "../services/validate.service.ts";
 import { generateEpisode } from "../services/pipeline.service.ts";
 import { synthesizeSpeech } from "../services/tts.service.ts";
 import type { AppLocals } from "../middleware/locals.ts";
+import { clip, hashPrompt } from "../lib/logger.ts";
+import { getLog } from "../lib/requestContext.ts";
+import { securityEvent, timed } from "../lib/stepLog.ts";
 import type { GenerateBody, ValidateBody } from "../schemas/podcast.schema.ts";
+
+// validatePrompt wrapped with the validate_prompt step log + topic_rejected security event
+async function validateLogged(prompt: string) {
+  const promptHash = hashPrompt(prompt);
+  return timed("validate_prompt", { promptHash }, async (ctx) => {
+    const v = await validatePrompt(prompt);
+    if (!v.isValid) {
+      ctx.markBlocked();
+      securityEvent("topic_rejected", { stage: "topic", code: "TOPIC_INVALID", promptHash, reason: clip(v.reason) });
+    }
+    return v;
+  });
+}
 
 // POST /api/validate-prompt
 export async function validatePromptController(
@@ -12,7 +28,7 @@ export async function validatePromptController(
   res: Response<any, AppLocals>
 ): Promise<void> {
   const { prompt } = res.locals.body as ValidateBody;
-  const validated = await validatePrompt(prompt);
+  const validated = await validateLogged(prompt);
 
   res.status(200).json({
     success: true,
@@ -30,7 +46,7 @@ export async function generatePodcastController(
   const supabase = res.locals.supabase!;
 
   // Re-validate the prompt server-side
-  const validated = await validatePrompt(prompt);
+  const validated = await validateLogged(prompt);
   if (!validated.isValid) {
     res.status(400).json({ error: validated.reason });
     return;
@@ -44,23 +60,31 @@ export async function generatePodcastController(
   });
 
   // Convert the script into an MP3 audio file
-  const synthesizedAudio = await synthesizeSpeech(script);
+  const topicHash = hashPrompt(validated.sanitizedTopic);
+  const synthesizedAudio = await timed("tts", { promptHash: topicHash }, async (ctx) => {
+    const audio = await synthesizeSpeech(script);
+    ctx.extra.audioBytes = audio.length;
+    return audio;
+  });
   const userId = user.id;
 
   // Store the podcast audio file in Supabase Storage
   const safeTitle = script.title.replace(/[^a-zA-Z0-9-_]/g, "_");
   const filePath = `podcasts/${userId}/${safeTitle}.mp3`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("podcasts")
-    .upload(filePath, synthesizedAudio, {
-      contentType: "audio/mpeg",
-      upsert: true,
-    });
+  await timed("upload", { promptHash: topicHash }, async (ctx) => {
+    ctx.extra.audioBytes = synthesizedAudio.length;
+    const { error: uploadError } = await supabase.storage
+      .from("podcasts")
+      .upload(filePath, synthesizedAudio, {
+        contentType: "audio/mpeg",
+        upsert: true,
+      });
 
-  if (uploadError) {
-    throw new Error(`Storage upload failed: ${uploadError.message}`);
-  }
+    if (uploadError) {
+      throw new Error(`Storage upload failed: ${clip(uploadError.message)}`);
+    }
+  });
 
   // Insert podcast metadata into the Supabase database
   const date = new Date();
@@ -69,21 +93,23 @@ export async function generatePodcastController(
   // Stored style keeps the capitalized label the frontend/library use
   const storedStyle = style.charAt(0).toUpperCase() + style.slice(1);
 
-  const { error: insertError } = await supabase
-    .from("podcasts")
-    .insert({
-      created_at: formattedDate,
-      title: script.title,
-      description: script.description,
-      duration: duration,
-      style: storedStyle,
-      url: filePath,
-      author: userId,
-    });
+  await timed("db_insert", { promptHash: topicHash }, async () => {
+    const { error: insertError } = await supabase
+      .from("podcasts")
+      .insert({
+        created_at: formattedDate,
+        title: script.title,
+        description: script.description,
+        duration: duration,
+        style: storedStyle,
+        url: filePath,
+        author: userId,
+      });
 
-  if (insertError) {
-    throw new Error(`DB insert failed: ${insertError.message}`);
-  }
+    if (insertError) {
+      throw new Error(`DB insert failed: ${clip(insertError.message)}`);
+    }
+  });
 
   res.status(200).json({ success: true });
 }
@@ -115,7 +141,7 @@ export async function getPodcastsController(
 
     // Skip items whose audio can't be signed rather than failing the whole list
     if (signError || !signedData) {
-      console.error("Error signing URL for podcast", podcast.id, signError?.message);
+      getLog().error({ event: "sign_url_failed", podcastId: podcast.id, errorMessage: clip(signError?.message) });
       continue;
     }
 

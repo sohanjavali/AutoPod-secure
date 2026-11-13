@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { GuardrailError } from "./errors.ts";
+import { clip } from "../lib/logger.ts";
+import { getLog } from "../lib/requestContext.ts";
 
 export const INJECTION_BLOCK_THRESHOLD = 0.8;
 
@@ -71,7 +73,12 @@ export async function classifyInjection(
       );
     }
     // Research notes are model-generated and still pass delimiting + output checks, so fail open here.
-    console.warn("Research injection classifier failed; continuing", err);
+    getLog().warn({
+      event: "classifier_unavailable",
+      stage: "research",
+      errorName: err instanceof Error ? err.name : "NonError",
+      errorMessage: clip(err instanceof Error ? err.message : err),
+    });
     return { isInjection: false, confidence: 0, reason: "classifier unavailable" };
   }
 }

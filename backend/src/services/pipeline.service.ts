@@ -5,6 +5,8 @@ import type { Style } from "../schemas/podcast.schema.ts";
 import type { PodcastEpisode } from "../utils/types.ts";
 import { researchPrompt } from "./research.service.ts";
 import { generateScript } from "./script.service.ts";
+import { clip, hashPrompt } from "../lib/logger.ts";
+import { timed } from "../lib/stepLog.ts";
 
 const STYLES: readonly string[] = ["conversational", "educational", "entertaining", "professional"];
 
@@ -18,21 +20,40 @@ export async function generateEpisode(input: {
   if (!STYLES.includes(style)) throw new Error("Invalid style");
   if (duration !== 5 && duration !== 10) throw new Error("Invalid duration");
 
-  const topicVerdict = await classifyInjection(topic, "topic");
-  if (topicVerdict.isInjection && topicVerdict.confidence >= INJECTION_BLOCK_THRESHOLD) {
-    throw new GuardrailError("INJECTION_DETECTED", "topic", `Topic flagged: ${topicVerdict.reason}`);
-  }
+  const base = { promptHash: hashPrompt(topic) };
+
+  await timed("classify_topic", base, async (ctx) => {
+    const v = await classifyInjection(topic, "topic");
+    ctx.extra.confidence = v.confidence;
+    ctx.extra.isInjection = v.isInjection;
+    if (v.isInjection && v.confidence >= INJECTION_BLOCK_THRESHOLD) {
+      ctx.extra.reason = clip(v.reason);
+      throw new GuardrailError("INJECTION_DETECTED", "topic", `Topic flagged: ${v.reason}`);
+    }
+  });
 
   const config = { prompt: topic, style, duration };
-  const research = parseResearch(await researchPrompt(config));
+  const research = await timed("research", base, async () => parseResearch(await researchPrompt(config)));
 
   const notes = JSON.stringify(research);
-  const researchVerdict = await classifyInjection(notes, "research");
-  if (researchVerdict.isInjection && researchVerdict.confidence >= INJECTION_BLOCK_THRESHOLD) {
-    throw new GuardrailError("INJECTION_DETECTED", "research", `Research flagged: ${researchVerdict.reason}`);
-  }
+  await timed("classify_research", base, async (ctx) => {
+    const v = await classifyInjection(notes, "research");
+    ctx.extra.confidence = v.confidence;
+    ctx.extra.isInjection = v.isInjection;
+    if (v.isInjection && v.confidence >= INJECTION_BLOCK_THRESHOLD) {
+      ctx.extra.reason = clip(v.reason);
+      throw new GuardrailError("INJECTION_DETECTED", "research", `Research flagged: ${v.reason}`);
+    }
+  });
 
-  const episode = parseEpisode(await generateScript(config, notes), duration);
-  assertSafeForTTS(episode);
+  const rawScript = await timed("script", base, () => generateScript(config, notes));
+
+  const episode = await timed("output_validation", base, (ctx) => {
+    const ep = parseEpisode(rawScript, duration);
+    ctx.extra.lineCount = ep.script.length;
+    return ep;
+  });
+
+  await timed("tts_safety", base, () => assertSafeForTTS(episode));
   return episode;
 }
