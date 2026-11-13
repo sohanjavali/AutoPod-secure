@@ -2,6 +2,7 @@ import { GenerateBodySchema } from "../src/schemas/podcast.schema.ts";
 import { validatePrompt } from "../src/services/validate.service.ts";
 import { generateEpisode } from "../src/services/pipeline.service.ts";
 import { GuardrailError } from "../src/guardrails/errors.ts";
+import { classifyInjection, INJECTION_BLOCK_THRESHOLD } from "../src/guardrails/injection.ts";
 
 // Mirrors the real request path in-process: schema -> validatePrompt -> generateEpisode.
 // No TTS, no JWT. Run from backend/ so the app's own env loading works from cwd.
@@ -18,6 +19,21 @@ export default class AutoPodProvider {
     if (!parsed.success) {
       const detail = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
       return { output: JSON.stringify({ blocked: true, layer: "schema", detail }) };
+    }
+
+    // Cheap mode: schema, then ONE claude-haiku-4-5 classifier call. No validate/research/script.
+    if (process.env.REDTEAM_MODE === "classifier") {
+      try {
+        const c = await classifyInjection(parsed.data.prompt, "topic");
+        const blocked = c.isInjection && c.confidence >= INJECTION_BLOCK_THRESHOLD;
+        return { output: JSON.stringify({ blocked, layer: "classifier", confidence: c.confidence }) };
+      } catch (err) {
+        // classifyInjection fails closed on topics by throwing GuardrailError
+        if (err instanceof GuardrailError) {
+          return { output: JSON.stringify({ blocked: true, layer: "classifier", code: err.code, stage: err.stage }) };
+        }
+        return { error: err instanceof Error ? err.message : String(err) };
+      }
     }
 
     try {
