@@ -38,7 +38,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.6",
     "nodemon": "^3.1.11",
     "promptfoo": "^0.125.1",
     "ts-node": "^10.9.2",
