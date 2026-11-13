@@ -2,6 +2,7 @@ import { z } from "zod";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildValidatePrompt } from "../utils/prompts.ts";
 import type { ValidateResult } from "../utils/types.ts";
+import { PIPELINE_MODEL } from "../lib/models.ts";
 
 const ValidateSchema = z.object({
   isValid: z.boolean(),
@@ -16,7 +17,7 @@ export async function validatePrompt(prompt: string): Promise<ValidateResult> {
 
   // Call the Anthropic API to validate the prompt
   const response = await anthropicClient.beta.messages.create({
-    model: "claude-sonnet-4-5",
+    model: PIPELINE_MODEL,
     max_tokens: 150,
     betas: ["structured-outputs-2025-11-13"],
     system: [{ type: "text", text: system }],

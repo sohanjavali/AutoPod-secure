@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "PORT=4015 CARTESIA_API_KEY=placeholder ANTHROPIC_API_KEY=placeholder SUPABASE_URL=http://127.0.0.1:9 SUPABASE_PUBLISHABLE_KEY=placeholder LOG_LEVEL=silent tsx --test tests/*.test.ts",
+    "test": "CLAUDE_MODEL=claude-sonnet-mock PORT=4015 CARTESIA_API_KEY=placeholder ANTHROPIC_API_KEY=placeholder SUPABASE_URL=http://127.0.0.1:9 SUPABASE_PUBLISHABLE_KEY=placeholder LOG_LEVEL=silent tsx --test tests/*.test.ts",
     "redteam": "promptfoo eval -c redteam/promptfooconfig.yaml --no-share --no-cache --no-progress-bar -j 2",
     "redteam:cheap": "REDTEAM_MODE=classifier promptfoo eval -c redteam/promptfooconfig.yaml --no-share --no-cache --no-progress-bar -j 2"
   },

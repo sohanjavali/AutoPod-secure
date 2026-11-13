@@ -9,6 +9,7 @@ import { anthropicClient } from "../lib/anthropic.ts";
 import { buildResearchPrompt } from "../utils/prompts.ts";
 import type { ResearchResult } from "../utils/types.ts";
 import { extractJson } from "./llm-response.ts";
+import { PIPELINE_MODEL } from "../lib/models.ts";
 
 export async function researchPrompt(promptContext: PodcastConfig): Promise<ResearchResult> {
   // Determine max tokens based on podcast duration
@@ -18,7 +19,7 @@ export async function researchPrompt(promptContext: PodcastConfig): Promise<Rese
 
   // Call the Anthropic API to get research notes in JSON format
   const response = await anthropicClient.beta.messages.create({
-    model: "claude-sonnet-4-5",
+    model: PIPELINE_MODEL,
     max_tokens: maxTokens,
     betas: ["structured-outputs-2025-11-13"],
     system: [{ type: "text", text: system }],

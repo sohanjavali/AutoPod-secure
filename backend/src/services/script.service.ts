@@ -11,6 +11,7 @@ import type { PodcastEpisode } from "../utils/types.ts";
 import { voices } from "../lib/cartesia.ts";
 import { ALLOWED_EMOTIONS, ALLOWED_SPEAKERS } from "../guardrails/output.ts";
 import { extractJson } from "./llm-response.ts";
+import { PIPELINE_MODEL } from "../lib/models.ts";
 
 export async function generateScript(
   promptContext: PodcastConfig,
@@ -23,7 +24,7 @@ export async function generateScript(
 
   // Call the Anthropic API to generate the podcast script in JSON format
   const response = await anthropicClient.beta.messages.create({
-    model: "claude-sonnet-4-5",
+    model: PIPELINE_MODEL,
     max_tokens: maxTokens,
     betas: ["structured-outputs-2025-11-13"],
     system: [{ type: "text", text: system }],
