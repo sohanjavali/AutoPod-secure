@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.1",
-    "@cartesia/cartesia-js": "^2.2.9",
+    "@cartesia/cartesia-js": "^4.2.0",
     "@supabase/supabase-js": "^2.84.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
