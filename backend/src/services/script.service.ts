@@ -9,6 +9,8 @@ import { anthropicClient } from "../lib/anthropic.ts";
 import { buildScriptPrompt } from "../utils/prompts.ts";
 import type { PodcastEpisode } from "../utils/types.ts";
 import { voices } from "../lib/cartesia.ts";
+import { ALLOWED_EMOTIONS, ALLOWED_SPEAKERS } from "../guardrails/output.ts";
+import { extractJson } from "./llm-response.ts";
 
 export async function generateScript(
   promptContext: PodcastConfig,
@@ -17,21 +19,18 @@ export async function generateScript(
   // Determine max tokens based on podcast duration
   const maxTokens = promptContext.duration === 5 ? 4000 : 7000;
 
+  const { system, user } = buildScriptPrompt(promptContext, researchNotes, voices);
+
   // Call the Anthropic API to generate the podcast script in JSON format
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: maxTokens,
     betas: ["structured-outputs-2025-11-13"],
-    system: [
-      {
-        type: "text",
-        text: "You are a professional podcast script writer."
-      }
-    ],
+    system: [{ type: "text", text: system }],
     messages: [
       {
         role: "user",
-        content: buildScriptPrompt(promptContext, researchNotes, voices)
+        content: user
       }
     ],
     output_format: {
@@ -47,26 +46,21 @@ export async function generateScript(
               type: "object",
               properties: {
                 lineNum: { type: "number" },
-                speaker: { type: "string" },
+                speaker: { type: "string", enum: [...ALLOWED_SPEAKERS] },
                 text: { type: "string" },
-                emotion: { type: "string" }
+                emotion: { type: "string", enum: [...ALLOWED_EMOTIONS] }
               },
               required: ["lineNum", "speaker", "text", "emotion"],
               additionalProperties: false
             }
           }
         },
-        required: ["title", "description", "voices", "script"],
+        required: ["title", "description", "script"],
         additionalProperties: false
       }
     }
   });
 
-  const text = (response?.content?.[0] as any)?.text;
-
-  if (typeof text !== "string") {
-    return text as PodcastEpisode;
-  }
-
-  return JSON.parse(text) as PodcastEpisode;
+  // Shape is validated downstream by parseEpisode
+  return extractJson(response, "script") as PodcastEpisode;
 }

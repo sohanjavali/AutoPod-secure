@@ -8,26 +8,24 @@ import type { PodcastConfig } from "../utils/types.ts";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildResearchPrompt } from "../utils/prompts.ts";
 import type { ResearchResult } from "../utils/types.ts";
+import { extractJson } from "./llm-response.ts";
 
 export async function researchPrompt(promptContext: PodcastConfig): Promise<ResearchResult> {
   // Determine max tokens based on podcast duration
   const maxTokens = promptContext.duration === 5 ? 2000 : 4000;
   
+  const { system, user } = buildResearchPrompt(promptContext);
+
   // Call the Anthropic API to get research notes in JSON format
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: maxTokens,
     betas: ["structured-outputs-2025-11-13"],
-    system: [
-      {
-        type: "text",
-        text: "You are an research assistant tasked with producing research notes for a podcast."
-      }
-    ],
+    system: [{ type: "text", text: system }],
     messages: [
       {
         role: "user",
-        content: buildResearchPrompt(promptContext)
+        content: user
       }
     ],
     output_format: {
@@ -73,13 +71,6 @@ export async function researchPrompt(promptContext: PodcastConfig): Promise<Rese
     }
   });
 
-  const text = (response?.content?.[0] as any)?.text;
-
-  // If the SDK already provided a parsed object, return it directly
-  if (typeof text !== "string") {
-    return text as ResearchResult;
-  }
-
-  // Otherwise return a parsed JSON string
-  return JSON.parse(text) as ResearchResult;
+  // Shape is validated downstream by parseResearch
+  return extractJson(response, "research") as ResearchResult;
 }

@@ -11,7 +11,7 @@ export interface UserPayload {
 
 export interface PodcastConfig {
   prompt: string;
-  style: string; 
+  style: "conversational" | "educational" | "entertaining" | "professional"; // matches Style in schemas/podcast.schema.ts
   duration: number;
 }
 

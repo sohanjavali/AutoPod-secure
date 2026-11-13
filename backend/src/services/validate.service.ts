@@ -1,25 +1,26 @@
+import { z } from "zod";
 import { anthropicClient } from "../lib/anthropic.ts";
 import { buildValidatePrompt } from "../utils/prompts.ts";
 import type { ValidateResult } from "../utils/types.ts";
 
+const ValidateSchema = z.object({
+  isValid: z.boolean(),
+  reason: z.string().max(300),
+  sanitizedTopic: z.string().trim().min(3).max(300),
+});
+
+const FALLBACK: ValidateResult = { isValid: false, reason: "Could not validate topic", sanitizedTopic: "" };
+
 export async function validatePrompt(prompt: string): Promise<ValidateResult> {
+  const { system, user } = buildValidatePrompt(prompt);
+
   // Call the Anthropic API to validate the prompt
   const response = await anthropicClient.beta.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 150,
     betas: ["structured-outputs-2025-11-13"],
-    system: [
-      {
-        type: "text",
-        text: "You are a content safety and feasibility evaluator."
-      }
-    ],
-    messages: [
-      {
-        role: "user",
-        content: buildValidatePrompt(prompt)
-      }
-    ],
+    system: [{ type: "text", text: system }],
+    messages: [{ role: "user", content: user }],
     output_format: {
       type: "json_schema",
       schema: {
@@ -35,14 +36,24 @@ export async function validatePrompt(prompt: string): Promise<ValidateResult> {
     }
   });
 
-  // Extract the text field which may be a JSON string
-  const text = (response?.content?.[0] as any)?.text;
+  if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") return FALLBACK;
 
-  // If the SDK already provided a parsed object, return it directly
-  if (typeof text !== "string") {
-    return text as ValidateResult;
+  const block = (response.content as { type?: string; text?: unknown }[]).find((b) => b?.type === "text");
+  let raw: unknown = block?.text;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return FALLBACK;
+    }
   }
 
-  // Otherwise return a parsed JSON string
-  return JSON.parse(text) as ValidateResult;
+  // The model-produced sanitizedTopic is untrusted: enforce shape and length. A rejected topic
+  // legitimately has an empty sanitizedTopic, so only enforce the 3-300 bound when isValid.
+  const loose = z.object({ isValid: z.boolean(), reason: z.string().max(300), sanitizedTopic: z.string() }).safeParse(raw);
+  if (loose.success && !loose.data.isValid) {
+    return { isValid: false, reason: loose.data.reason, sanitizedTopic: "" };
+  }
+  const parsed = ValidateSchema.safeParse(raw);
+  return parsed.success ? parsed.data : FALLBACK;
 }
