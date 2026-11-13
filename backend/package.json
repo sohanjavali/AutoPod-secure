@@ -7,7 +7,8 @@
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "redteam": "promptfoo eval -c redteam/promptfooconfig.yaml --no-share --no-cache --no-progress-bar -j 2"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +38,7 @@
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",
     "nodemon": "^3.1.11",
+    "promptfoo": "^0.125.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
