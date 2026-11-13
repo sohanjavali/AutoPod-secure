@@ -48,14 +48,16 @@ export function MainPromptArea({ onLoginSuccess }: MainPromptAreaProps) {
     const validation = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/validate-prompt`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
       },
       body: JSON.stringify({ prompt: prompt.trim() }),
     }).then(res => res.json());
 
     // If validation explicitly fails, show the reason to the user and stop
     if (!validation?.data?.isValid) {
-      setValidationError(validation.data.reason ?? 'Cannot generate podcast for the given prompt.');
+      // 400/401/429 responses carry { error } instead of { data }
+      setValidationError(validation?.data?.reason ?? validation?.error ?? 'Cannot generate podcast for the given prompt.');
       setIsLoading(false);
       return;
     }

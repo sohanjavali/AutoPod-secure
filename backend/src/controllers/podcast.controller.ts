@@ -1,20 +1,19 @@
-import type { Request, Response, NextFunction } from "express";
-import type { PodcastConfig } from "../utils/types.ts";
+import type { Request, Response } from "express";
+import type { PodcastEpisode } from "../utils/types.ts";
 import { validatePrompt } from "../services/validate.service.ts";
-import { researchPrompt } from "../services/research.service.ts";
-import { generateScript } from "../services/script.service.ts";
-import type { ValidateResult, ResearchResult, PodcastEpisode } from "../utils/types.ts";
+import { generateEpisode } from "../services/pipeline.service.ts";
 import { synthesizeSpeech } from "../services/tts.service.ts";
+import type { AppLocals } from "../middleware/locals.ts";
+import type { GenerateBody, ValidateBody } from "../schemas/podcast.schema.ts";
 
 // POST /api/validate-prompt
 export async function validatePromptController(
-  req: Request,
-  res: Response,
-  next: NextFunction
+  _req: Request,
+  res: Response<any, AppLocals>
 ): Promise<void> {
-  const { prompt } = req.body as { prompt: string };
-  const validated: ValidateResult = await validatePrompt(prompt);
-  
+  const { prompt } = res.locals.body as ValidateBody;
+  const validated = await validatePrompt(prompt);
+
   res.status(200).json({
     success: true,
     data: validated,
@@ -23,18 +22,26 @@ export async function validatePromptController(
 
 // POST /api/generate-podcast
 export async function generatePodcastController(
-  req: Request,
-  res: Response
+  _req: Request,
+  res: Response<any, AppLocals>
 ): Promise<void> {
-  const { prompt, style, duration, user } = req.body;
-  const podcastConfig = { prompt, style, duration, user } as PodcastConfig;
+  const { prompt, style, duration } = res.locals.body as GenerateBody;
+  const user = res.locals.user!;
+  const supabase = res.locals.supabase!;
 
-  // Perform research and generate a script for the podcast
-  const research: ResearchResult = await researchPrompt(podcastConfig);
-  const script: PodcastEpisode = await generateScript(
-    podcastConfig, 
-    JSON.stringify(research)
-  );
+  // Re-validate the prompt server-side
+  const validated = await validatePrompt(prompt);
+  if (!validated.isValid) {
+    res.status(400).json({ error: validated.reason });
+    return;
+  }
+
+  // Research, script, and guardrails happen inside the pipeline
+  const script: PodcastEpisode = await generateEpisode({
+    topic: validated.sanitizedTopic,
+    style,
+    duration,
+  });
 
   // Convert the script into an MP3 audio file
   const synthesizedAudio = await synthesizeSpeech(script);
@@ -44,7 +51,7 @@ export async function generatePodcastController(
   const safeTitle = script.title.replace(/[^a-zA-Z0-9-_]/g, "_");
   const filePath = `podcasts/${userId}/${safeTitle}.mp3`;
 
-  const { error: uploadError } = await req.body.supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from("podcasts")
     .upload(filePath, synthesizedAudio, {
       contentType: "audio/mpeg",
@@ -52,31 +59,30 @@ export async function generatePodcastController(
     });
 
   if (uploadError) {
-    console.error("Error uploading file:", uploadError);
-    res.status(500).json({ error: uploadError.message });
-    return;
+    throw new Error(`Storage upload failed: ${uploadError.message}`);
   }
 
   // Insert podcast metadata into the Supabase database
   const date = new Date();
   const formattedDate = date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
 
-  const { data, error: insertError } = await req.body.supabase
+  // Stored style keeps the capitalized label the frontend/library use
+  const storedStyle = style.charAt(0).toUpperCase() + style.slice(1);
+
+  const { error: insertError } = await supabase
     .from("podcasts")
     .insert({
       created_at: formattedDate,
       title: script.title,
       description: script.description,
       duration: duration,
-      style: style,
+      style: storedStyle,
       url: filePath,
       author: userId,
-    })
+    });
 
   if (insertError) {
-    console.error("Error inserting DB row:", insertError);
-    res.status(500).json({ error: insertError.message });
-    return;
+    throw new Error(`DB insert failed: ${insertError.message}`);
   }
 
   res.status(200).json({ success: true });
@@ -84,38 +90,38 @@ export async function generatePodcastController(
 
 // POST /api/get-podcasts
 export async function getPodcastsController(
-  req: Request,
-  res: Response
+  _req: Request,
+  res: Response<any, AppLocals>
 ): Promise<void> {
-  const user = req.body.user;
-  const userId = user.id;
+  const userId = res.locals.user!.id;
+  const supabase = res.locals.supabase!;
 
-  const { data, error } = await req.body.supabase
+  const { data, error } = await supabase
     .from("podcasts")
     .select("*")
     .eq("author", userId)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching podcasts:", error);
-    res.status(500).json({ error: error.message });
-    return;
+    throw new Error(`Fetching podcasts failed: ${error.message}`);
   }
 
   // Generate signed URLs for each podcast file (so the client can access them)
   const result: Partial<PodcastEpisode>[] = [];
-  for (const podcast of data) {
-    let signedUrl: string
-
-    const { data: signedData, error: signError } = await req.body.supabase.storage
+  for (const podcast of data ?? []) {
+    const { data: signedData, error: signError } = await supabase.storage
       .from("podcasts")
       .createSignedUrl(podcast.url, 60 * 60); // signedUrl valid for 1 hour
 
-    signedUrl = signedData.signedUrl;
+    // Skip items whose audio can't be signed rather than failing the whole list
+    if (signError || !signedData) {
+      console.error("Error signing URL for podcast", podcast.id, signError?.message);
+      continue;
+    }
 
     result.push({
       ...podcast,
-      url: signedUrl,
+      url: signedData.signedUrl,
     });
   }
 
